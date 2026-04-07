@@ -195,12 +195,34 @@ namespace ZooBuilder
         void ShowGhost(EnclosureType type)
         {
             HideGhost();
-            var ghostPrefab = GetGhostForType(type);
-            if (ghostPrefab != null)
+
+            // Use dedicated ghost prefab if assigned, otherwise fall back to the real prefab
+            var ghostPrefab = GetGhostForType(type) ?? GetPrefabForType(type);
+            if (ghostPrefab == null) return;
+
+            m_ActiveGhost = Object.Instantiate(ghostPrefab);
+            m_ActiveGhost.SetActive(false);
+
+            // Make all renderers semi-transparent so it looks like a ghost preview
+            foreach (var r in m_ActiveGhost.GetComponentsInChildren<Renderer>())
             {
-                m_ActiveGhost = Object.Instantiate(ghostPrefab);
-                m_ActiveGhost.SetActive(false);
+                foreach (var mat in r.materials)
+                {
+                    // Works for URP Lit and Standard shaders
+                    mat.SetFloat("_Surface", 1);          // 1 = Transparent
+                    mat.SetFloat("_Blend", 0);            // Alpha blend
+                    mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                    mat.renderQueue = 3000;
+
+                    Color c = mat.color;
+                    c.a = 0.4f;
+                    mat.color = c;
+                }
             }
+
+            // Disable all colliders so the ghost doesn't interfere with raycasts
+            foreach (var col in m_ActiveGhost.GetComponentsInChildren<Collider>())
+                col.enabled = false;
         }
 
         void HideGhost()
