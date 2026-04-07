@@ -6021,7 +6021,7 @@ struct ShaderResources_t95EDE5488A460139658FEF1B3A26B3685A72730A  : public Runti
 	Shader_tADC867D36B7876EE22427FAA2CE485105F4EE692* ___xrOcclusionMeshPS;
 	Shader_tADC867D36B7876EE22427FAA2CE485105F4EE692* ___xrMirrorViewPS;
 };
-struct U3CU3Ec__DisplayClass60_0_t4D9299BE0CE691DFD471345570B92CAD2F87167C  : public RuntimeObject
+struct U3CU3Ec__DisplayClass47_0_tDDA5C0F85AF0E059059712FB53B7AEC40059A264  : public RuntimeObject
 {
 	Action_tD00B0A84D7945E50C2DFFC28EFEE6ED44ED2AD07* ___action;
 };
@@ -49813,12 +49813,10 @@ struct EnclosurePlacer_t51CA4E02ECE9EF462884CB7F969F6EFF1523C75C  : public MonoB
 	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_EnclosureFloorPrefab1;
 	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_EnclosureFloorPrefab2;
 	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_EnclosureFloorPrefab3;
-	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_GhostPrefab1;
-	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_GhostPrefab2;
-	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_GhostPrefab3;
 	bool ___m_FaceCamera;
+	bool ___m_DebugFallbackPlacement;
+	float ___m_DebugPlaceDistance;
 	bool ___m_IsActive;
-	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_ActiveGhost;
 };
 struct EventTrigger_tAEBFB7A16CA99343EA87722F78884BF8646BAE1B  : public MonoBehaviour_t532A11E69716D348D8AA7F854AFCBFCB8AD17F71
 {
@@ -50476,9 +50474,18 @@ struct ZooInputHandler_tF8355386985A3CD72C5F76371813CE669E133D01  : public MonoB
 	ZooObjectPlacer_t013DB8DBEA02E309EFB82A3758ACF69642072C98* ___m_ObjectPlacer;
 	PathCreator_tD4DFA4BC3110FEFBB8B67A87758CCA662D134DF5* ___m_PathCreator;
 	ZooUIManager_tBE62C28DAD994F4E145508895F8B3FB9689BEB10* ___m_UIManager;
+	ZooTransformer_t30BD20FBD4DC3801298E4C4FF41B3D262BF7E27B* ___m_ZooTransformer;
+	Camera_tA92CC927D7439999BC82DBEDC0AA45B470F9E184* ___m_ARCamera;
 	float ___m_DragThreshold;
+	float ___m_EnclosureMoveSensitivity;
+	float ___m_EnclosureRotateSensitivity;
+	float ___m_EnclosureScaleSensitivity;
 	Vector2_t1FD6F485C871E832B347AB2DC8CBA08B739D8DF7 ___m_TouchStartPos;
 	bool ___m_IsDragging;
+	float ___m_PrevPinchDist;
+	float ___m_PrevTwistAngle;
+	bool ___m_TwoFingerActive;
+	bool ___m_TwoFingerOnEnclosure;
 };
 struct ZooManager_t57892E7C583DB8239C7CD4B3BE8FA4E8EED4DBF3  : public MonoBehaviour_t532A11E69716D348D8AA7F854AFCBFCB8AD17F71
 {
@@ -50513,7 +50520,6 @@ struct ZooObjectPlacer_t013DB8DBEA02E309EFB82A3758ACF69642072C98  : public MonoB
 	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_GhostObject;
 	int32_t ___m_TargetAnimalEnclosureType;
 	Dictionary_2_t0B15A60B00EC883D4249611C6C641C7BED5A71CE* ___m_PrefabDict;
-	bool ___m_Initialized;
 };
 struct ZooRequirementsChecker_t7C8FD179D812E39E6890DED6E6BB12E5666B2A3B  : public MonoBehaviour_t532A11E69716D348D8AA7F854AFCBFCB8AD17F71
 {
@@ -50530,15 +50536,10 @@ struct ZooTransformer_t30BD20FBD4DC3801298E4C4FF41B3D262BF7E27B  : public MonoBe
 {
 	float ___m_MinScale;
 	float ___m_MaxScale;
-	float ___m_TranslateSensitivity;
 	float ___m_RotateSensitivity;
 	float ___m_ScaleSensitivity;
 	Transform_tB27202C6F4E36D225EE28A13E4D662BF99785DB1* ___m_ZooRoot;
 	float ___m_CurrentScale;
-	float ___m_PrevPinchDist;
-	float ___m_PrevTwistAngle;
-	Vector2_t1FD6F485C871E832B347AB2DC8CBA08B739D8DF7 ___m_PrevDragPos;
-	bool ___m_IsDragging;
 	float ___m_PlaneY;
 	bool ___m_PlaneYSet;
 };
@@ -50549,9 +50550,10 @@ struct ZooUIManager_tBE62C28DAD994F4E145508895F8B3FB9689BEB10  : public MonoBeha
 	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_PanelPathCreation;
 	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_PanelPlacingObjects;
 	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_PanelComplete;
+	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnNextOrPath;
+	TextMeshProUGUI_t101091AF4B578BB534C92E9D1EEAF0611636D957* ___m_LblNextOrPath;
 	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnCancelEnclosure;
 	TextMeshProUGUI_t101091AF4B578BB534C92E9D1EEAF0611636D957* ___m_LblEnclosureStatus;
-	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnStartPathCreation;
 	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnBeginDraw;
 	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnStopDraw;
 	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnFinalizePath;
@@ -50568,19 +50570,8 @@ struct ZooUIManager_tBE62C28DAD994F4E145508895F8B3FB9689BEB10  : public MonoBeha
 	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnDeleteObject;
 	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnUndo;
 	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnRedo;
-	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnTranslateMode;
-	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnRotateMode;
-	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnScaleMode;
-	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_PanelEnclosureEdit;
 	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnDeleteEnclosure;
-	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnMoveEnclosureLeft;
-	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnMoveEnclosureRight;
-	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnMoveEnclosureFwd;
-	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnMoveEnclosureBack;
-	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnRotateEnclosureCW;
-	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnRotateEnclosureCCW;
-	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnScaleEnclosureUp;
-	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnScaleEnclosureDown;
+	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___m_PanelEnclosureEdit;
 	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnCheckRequirements;
 	Button_t6786514A57F7AFDEE5431112FEA0CAB24F5AE098* ___m_BtnSave;
 	TextMeshProUGUI_t101091AF4B578BB534C92E9D1EEAF0611636D957* ___m_LblRequirements;
@@ -50595,9 +50586,6 @@ struct ZooUIManager_tBE62C28DAD994F4E145508895F8B3FB9689BEB10  : public MonoBeha
 	ZooSaveManager_t23CD5502650D4DBB94F61F50FAE129A76055FA5C* ___m_SaveManager;
 	ZooRequirementsChecker_t7C8FD179D812E39E6890DED6E6BB12E5666B2A3B* ___m_RequirementsChecker;
 	ZooTransformer_t30BD20FBD4DC3801298E4C4FF41B3D262BF7E27B* ___m_ZooTransformer;
-	float ___m_EnclosureMoveStep;
-	float ___m_EnclosureRotateStep;
-	float ___m_EnclosureScaleStep;
 	EnclosureFloor_tF23987CA7E5AD2DF75C64B7AE5A215E3C776A210* ___m_SelectedEnclosure;
 	ZooObject_tEEE47D9CE0973B4C6C1CCBE425121BA6D8A00760* ___m_SelectedObject;
 };
@@ -64333,7 +64321,7 @@ const Il2CppTypeDefinitionSizes g_typeDefinitionSize9252 = { sizeof(ZooSaveManag
 IL2CPP_EXTERN_C_CONST Il2CppTypeDefinitionSizes g_typeDefinitionSize9253;
 const Il2CppTypeDefinitionSizes g_typeDefinitionSize9253 = { sizeof(ZooTransformer_t30BD20FBD4DC3801298E4C4FF41B3D262BF7E27B), -1, 0, 0 };
 IL2CPP_EXTERN_C_CONST Il2CppTypeDefinitionSizes g_typeDefinitionSize9254;
-const Il2CppTypeDefinitionSizes g_typeDefinitionSize9254 = { sizeof(U3CU3Ec__DisplayClass60_0_t4D9299BE0CE691DFD471345570B92CAD2F87167C), -1, 0, 0 };
+const Il2CppTypeDefinitionSizes g_typeDefinitionSize9254 = { sizeof(U3CU3Ec__DisplayClass47_0_tDDA5C0F85AF0E059059712FB53B7AEC40059A264), -1, 0, 0 };
 IL2CPP_EXTERN_C_CONST Il2CppTypeDefinitionSizes g_typeDefinitionSize9255;
 const Il2CppTypeDefinitionSizes g_typeDefinitionSize9255 = { sizeof(ZooUIManager_tBE62C28DAD994F4E145508895F8B3FB9689BEB10), -1, 0, 0 };
 IL2CPP_EXTERN_C_CONST Il2CppTypeDefinitionSizes g_typeDefinitionSize9256;
