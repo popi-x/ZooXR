@@ -86,6 +86,12 @@ namespace ZooBuilder
         [SerializeField] TextMeshProUGUI m_LblPhase;
         [SerializeField] TextMeshProUGUI m_LblCornerCount;
 
+        [Header("Debug / Testing")]
+        [Tooltip("Skip plane detection and jump straight to PlacingEnclosures on Start.")]
+        [SerializeField] bool m_DebugSkipDetection = false;
+        [Tooltip("Hide Path Creation and Placing Objects panels so you can test enclosures only.")]
+        [SerializeField] bool m_DebugEnclosureOnly = false;
+
         [Header("System References")]
         [SerializeField] EnclosurePlacer m_EnclosurePlacer;
         [SerializeField] PathCreator m_PathCreator;
@@ -126,11 +132,21 @@ namespace ZooBuilder
 
         void Start()
         {
-            ShowOnlyPanel(m_PanelDetecting);
             HideObjectMenu();
             if (m_PanelRequirements != null) m_PanelRequirements.SetActive(false);
             if (m_PanelEnclosureEdit != null) m_PanelEnclosureEdit.SetActive(false);
             RefreshUndoRedoButtons();
+
+            if (m_DebugSkipDetection || m_DebugEnclosureOnly)
+            {
+                // Bypass plane detection — jump directly to enclosure placement
+                ZooManager.Instance?.SetPhase(BuildPhase.PlacingEnclosures);
+                m_EnclosurePlacer?.BeginPlacement();
+            }
+            else
+            {
+                ShowOnlyPanel(m_PanelDetecting);
+            }
         }
 
         // ── Button wiring ────────────────────────────────────────────────────
@@ -198,10 +214,21 @@ namespace ZooBuilder
                     m_EnclosurePlacer?.BeginPlacement();
                     break;
                 case BuildPhase.CreatingPath:
+                    if (m_DebugEnclosureOnly)
+                    {
+                        // Stay on enclosures panel — path phase is disabled in debug mode
+                        ShowOnlyPanel(m_PanelPlacingEnclosures);
+                        return;
+                    }
                     ShowOnlyPanel(m_PanelPathCreation);
                     if (m_PanelEnclosureEdit != null) m_PanelEnclosureEdit.SetActive(false);
                     break;
                 case BuildPhase.PlacingObjects:
+                    if (m_DebugEnclosureOnly)
+                    {
+                        ShowOnlyPanel(m_PanelPlacingEnclosures);
+                        return;
+                    }
                     ShowOnlyPanel(m_PanelPlacingObjects);
                     break;
                 case BuildPhase.Complete:
