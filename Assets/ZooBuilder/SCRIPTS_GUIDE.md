@@ -178,18 +178,15 @@ Objects can only be placed **on an enclosure floor** and must not overlap existi
 ### ZooTransformer.cs
 **Attach to:** `ZooManager` GameObject.
 
-Gestures (automatic, no setup needed):
-
-| Gesture | Action |
-|---------|--------|
-| 1-finger drag | Translate zoo parallel to floor |
-| 2-finger pinch | Isotropic scale |
-| 2-finger twist | Rotate about Y axis |
+Gestures are now driven by `ZooInputHandler` — no longer has its own Update loop.
 
 | Inspector Field | Description |
 |----------------|-------------|
 | `Min/Max Scale` | Scale range (default 0.1 – 5.0) |
-| `Translate/Rotate/Scale Sensitivity` | Touch sensitivity multipliers |
+| `Rotate/Scale Sensitivity` | Touch sensitivity multipliers |
+
+Public API called by `ZooInputHandler`:
+- `HandleTwoFingerGesture(pinchDelta, twistDelta, midpoint)` — apply pinch/twist to whole zoo
 
 ⚠ Transformations affect AR preview only — they do not change saved layout data.
 
@@ -248,7 +245,7 @@ Connect all `[SerializeField]` references in the Inspector:
 
 **Phase panels:** `m_PanelDetecting`, `m_PanelPlacingEnclosures`, `m_PanelPathCreation`, `m_PanelPlacingObjects`, `m_PanelComplete`
 
-**Key buttons:** Cancel Enclosure, Begin/Stop/Finalize Path, Open/Close Object Menu, Fence/Gate/Bin/Animal selectors, Delete, Undo, Redo, Check Requirements, Save
+**Key buttons:** Cancel Enclosure, Begin/Stop/Finalize Path, Open/Close Object Menu, Fence/Gate/Bin/Animal selectors, Delete Object, **Delete Enclosure** (only button needed for enclosure editing — move/rotate/scale via gesture), Undo, Redo, Check Requirements, Save
 
 **Debug / Testing toggles** (Inspector):
 - `Debug Skip Detection` — bypass plane detection, start in PlacingEnclosures phase
@@ -263,20 +260,33 @@ Panels switch automatically as `ZooManager.CurrentPhase` changes.
 ### ZooInputHandler.cs
 **Attach to:** `ZooManager` GameObject.
 
-Routes touch input based on `ZooManager.CurrentPlacementMode`:
+Routes all touch input. Single-finger and two-finger gestures are handled here; `ZooTransformer` no longer has its own Update.
 
-| Mode | Tap action | Drag action |
-|------|-----------|-------------|
-| EnclosureFloor | `EnclosurePlacer.TryPlace()` | — |
-| Fence/Gate/Bin/Animal | `ZooObjectPlacer.TryPlaceObject()` | — |
-| Path | `PathCreator.PlacePathSegment()` | `PathCreator.AddPathPoint()` |
-| None | Select object/enclosure | — |
+**Tap routing (PlacementMode):**
+
+| Mode | Tap action |
+|------|-----------|
+| EnclosureFloor | `EnclosurePlacer.TryPlace()` |
+| Fence/Gate/Bin/Animal | `ZooObjectPlacer.TryPlaceObject()` |
+| Path | `PathCreator.PlacePathSegment()` |
+| None | Select/deselect object or enclosure |
+
+**Gesture routing:**
+
+| Gesture | Enclosure selected | Nothing selected |
+|---------|-------------------|-----------------|
+| 1-finger drag | Move enclosure | (no action) |
+| 2-finger pinch | Scale enclosure | Scale whole zoo |
+| 2-finger twist | Rotate enclosure | Rotate whole zoo |
 
 | Inspector Field | Description |
 |----------------|-------------|
-| `Drag Threshold` | Pixels moved before a tap becomes a drag (default 10) |
+| `Drag Threshold` | Pixels moved before tap becomes drag (default 10) |
+| `Enclosure Move/Rotate/Scale Sensitivity` | Gesture sensitivity for enclosure editing |
+| `AR Camera` | Used to convert screen delta to world-space movement |
+| `Zoo Transformer` | Reference for whole-zoo gestures |
 
-> **Note:** Uses `touch.fingerId` (not `-1`) for UI overlap check, so UI panels don't accidentally block AR plane taps.
+> **Note:** Uses `touch.fingerId` for UI overlap check — panels don't block AR plane taps.
 
 ---
 
