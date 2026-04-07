@@ -1,7 +1,7 @@
 # ZooBuilder Scripts Guide
 
 > Auto-reminder: this file should be updated after every commit that modifies `Assets/ZooBuilder/Scripts/`.
-> Last updated: 2026-04-07 — debug logs added to EnclosurePlacer and ZooInputHandler
+> Last updated: 2026-04-07
 
 ---
 
@@ -184,12 +184,13 @@ Objects can only be placed **on an enclosure floor** and must not overlap existi
 ### ZooTransformer.cs
 **Attach to:** `ZooManager` GameObject.
 
-Gestures are now driven by `ZooInputHandler` — no longer has its own Update loop.
+Gestures are driven by `ZooInputHandler` — no longer has its own Update loop.
 
 | Inspector Field | Description |
 |----------------|-------------|
 | `Min/Max Scale` | Scale range (default 0.1 – 5.0) |
-| `Rotate/Scale Sensitivity` | Touch sensitivity multipliers |
+| `Rotate Sensitivity` | Twist gesture sensitivity |
+| `Scale Sensitivity` | Pinch gesture sensitivity |
 
 Public API called by `ZooInputHandler`:
 - `HandleTwoFingerGesture(pinchDelta, twistDelta, midpoint)` — apply pinch/twist to whole zoo
