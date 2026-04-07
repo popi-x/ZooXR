@@ -195,29 +195,35 @@ namespace ZooBuilder
         }
 
         /// <summary>
-        /// Returns the world-space vertices of the first MeshFilter found on the GameObject.
-        /// Falls back to a default quad if no mesh is found.
+        /// Returns 4 world-space corners of the object's renderer bounds at floor Y.
+        /// Using bounds corners avoids degenerate triangles from complex meshes.
         /// </summary>
         Vector3[] GetMeshWorldVertices(GameObject go)
         {
-            var mf = go.GetComponentInChildren<MeshFilter>();
-            if (mf != null && mf.sharedMesh != null)
+            var renderers = go.GetComponentsInChildren<Renderer>();
+            Bounds bounds;
+
+            if (renderers.Length > 0)
             {
-                var localVerts = mf.sharedMesh.vertices;
-                var world = new Vector3[localVerts.Length];
-                for (int i = 0; i < localVerts.Length; i++)
-                    world[i] = mf.transform.TransformPoint(localVerts[i]);
-                return world;
+                bounds = renderers[0].bounds;
+                foreach (var r in renderers) bounds.Encapsulate(r.bounds);
+            }
+            else
+            {
+                bounds = new Bounds(go.transform.position, Vector3.one);
             }
 
-            // Fallback: 1x1 metre quad centred on the object
-            float h = 0.5f;
-            return new[]
+            float y = go.transform.position.y;
+            float minX = bounds.min.x, maxX = bounds.max.x;
+            float minZ = bounds.min.z, maxZ = bounds.max.z;
+
+            // CCW order when viewed from above
+            return new Vector3[]
             {
-                go.transform.position + go.transform.TransformDirection(new Vector3(-h, 0,  h)),
-                go.transform.position + go.transform.TransformDirection(new Vector3( h, 0,  h)),
-                go.transform.position + go.transform.TransformDirection(new Vector3( h, 0, -h)),
-                go.transform.position + go.transform.TransformDirection(new Vector3(-h, 0, -h)),
+                new Vector3(minX, y, minZ),
+                new Vector3(maxX, y, minZ),
+                new Vector3(maxX, y, maxZ),
+                new Vector3(minX, y, maxZ),
             };
         }
 
