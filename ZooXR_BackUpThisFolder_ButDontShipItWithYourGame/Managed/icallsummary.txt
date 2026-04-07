@@ -285,8 +285,14 @@ UnityEngine.AndroidJNI::SetStaticStringField_Injected
 UnityEngine.AndroidJNI::SetStringField_Injected
 UnityEngine.AndroidJNIHelper::get_debug
 UnityEngine.AndroidJNIHelper::set_debug
+UnityEngine.Animation::Play_Injected
 UnityEngine.Animation::GetStateCount_Injected
+UnityEngine.Animation::AddClip_Injected
+UnityEngine.Animation::set_playAutomatically_Injected
 UnityEngine.Animation::GetStateAtIndex_Injected
+UnityEngine.Animation::GetState_Injected
+UnityEngine.AnimationClip::Internal_CreateAnimationClip
+UnityEngine.AnimationClip::set_legacy_Injected
 UnityEngine.AnimationCurve::Internal_Equals_Injected
 UnityEngine.AnimationCurve::AddKey_Injected
 UnityEngine.AnimationCurve::AddKey_Internal_Injected
@@ -306,10 +312,16 @@ UnityEngine.AnimationCurve::set_keys_Injected
 UnityEngine.AnimationCurve::get_postWrapMode_Injected
 UnityEngine.AnimationCurve::get_preWrapMode_Injected
 UnityEngine.Animations.AnimationLayerMixerPlayable::SetSingleLayerOptimizationInternal
+UnityEngine.AnimationState::set_speed_Injected
 UnityEngine.Animator::GetBoolString_Injected
+UnityEngine.Animator::IsInIKPass_Injected
 UnityEngine.Animator::get_hasBoundPlayables_Injected
+UnityEngine.Animator::get_logWarnings_Injected
 UnityEngine.Animator::ResetTriggerString_Injected
 UnityEngine.Animator::SetBoolString_Injected
+UnityEngine.Animator::SetFloatString_Injected
+UnityEngine.Animator::SetLookAtPositionInternal_Injected
+UnityEngine.Animator::SetLookAtWeightInternal_Injected
 UnityEngine.Animator::SetTriggerString_Injected
 UnityEngine.Application::get_isBatchMode
 UnityEngine.Application::get_isFocused
@@ -320,6 +332,7 @@ UnityEngine.Application::get_unityVersionMaj
 UnityEngine.Application::get_unityVersionVer
 UnityEngine.Application::OpenURL_Injected
 UnityEngine.Application::get_dataPath_Injected
+UnityEngine.Application::get_persistentDataPath_Injected
 UnityEngine.Application::get_streamingAssetsPath_Injected
 UnityEngine.Application::set_targetFrameRate
 UnityEngine.Application::get_platform
@@ -341,6 +354,7 @@ UnityEngine.Behaviour::get_isActiveAndEnabled_Injected
 UnityEngine.Behaviour::set_enabled_Injected
 UnityEngine.Bindings.BindingsAllocator::Free
 UnityEngine.Bindings.BindingsAllocator::FreeNativeOwnedMemory
+UnityEngine.Bounds::Internal_Contains
 UnityEngine.Bounds::IntersectRayAABB
 UnityEngine.BoxCollider::get_center_Injected
 UnityEngine.BoxCollider::get_size_Injected
@@ -827,6 +841,7 @@ UnityEngine.IntegratedSubsystem::Start_Injected
 UnityEngine.IntegratedSubsystem::Stop_Injected
 UnityEngine.Internal.InputUnsafeUtility::GetButtonDown_Injected
 UnityEngine.Internal.InputUnsafeUtility::GetButtonUp__Unmanaged
+UnityEngine.Internal.InputUnsafeUtility::GetButton_Injected
 UnityEngine.Internal.InputUnsafeUtility::GetButton__Unmanaged
 UnityEngine.Internal.InputUnsafeUtility::GetKeyDownString__Unmanaged
 UnityEngine.Internal.InputUnsafeUtility::GetKeyString__Unmanaged
@@ -1044,6 +1059,7 @@ UnityEngine.Mesh::get_vertexBufferTarget_Injected
 UnityEngine.Mesh::get_indexFormat_Injected
 UnityEngine.Mesh::GetVertexAttributeFormat_Injected
 UnityEngine.MeshCollider::get_convex_Injected
+UnityEngine.MeshCollider::set_convex_Injected
 UnityEngine.MeshCollider::set_sharedMesh_Injected
 UnityEngine.MeshFilter::get_mesh_Injected
 UnityEngine.MeshFilter::get_sharedMesh_Injected
@@ -1181,6 +1197,7 @@ UnityEngine.Quaternion::Internal_ToEulerRad_Injected
 UnityEngine.Random::RandomRangeInt
 UnityEngine.Random::Range
 UnityEngine.Random::get_value
+UnityEngine.Random::GetRandomUnitCircle
 UnityEngine.Random::InitState
 UnityEngine.Random::get_state_Injected
 UnityEngine.Random::set_state_Injected
@@ -1799,6 +1816,7 @@ UnityEngine.TextGenerator::GetLinesInternal_Injected
 UnityEngine.TextGenerator::GetVerticesInternal_Injected
 UnityEngine.TextGenerator::Internal_Destroy
 UnityEngine.TextGenerator::get_rectExtents_Injected
+UnityEngine.TextMesh::set_text_Injected
 UnityEngine.Texture::get_isReadable_Injected
 UnityEngine.Texture::get_streamingTextureDiscardUnusedMips
 UnityEngine.Texture::GetDataHeight_Injected
@@ -1887,6 +1905,7 @@ UnityEngine.Transform::GetChild_Injected
 UnityEngine.Transform::GetParent_Injected
 UnityEngine.Transform::GetLocalPositionAndRotation_Injected
 UnityEngine.Transform::GetPositionAndRotation_Injected
+UnityEngine.Transform::Internal_LookAt_Injected
 UnityEngine.Transform::InverseTransformDirection_Injected
 UnityEngine.Transform::InverseTransformPoint_Injected
 UnityEngine.Transform::RotateAroundInternal_Injected
