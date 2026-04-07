@@ -23,8 +23,14 @@ namespace ZooBuilder
         [SerializeField] Camera m_ARCamera;
 
         [Header("Prefabs")]
-        [Tooltip("Prefab for a placed enclosure floor (needs EnclosureFloor component, MeshFilter, MeshRenderer, MeshCollider).")]
-        [SerializeField] GameObject m_EnclosureFloorPrefab;
+        [Tooltip("Floor prefab for Enclosure 1 (static animals). Needs EnclosureFloor, MeshFilter, MeshRenderer, MeshCollider.")]
+        [SerializeField] GameObject m_EnclosureFloorPrefab1;
+
+        [Tooltip("Floor prefab for Enclosure 2 (roaming animals).")]
+        [SerializeField] GameObject m_EnclosureFloorPrefab2;
+
+        [Tooltip("Floor prefab for Enclosure 3 (hungry animal).")]
+        [SerializeField] GameObject m_EnclosureFloorPrefab3;
 
         [Tooltip("Small sphere shown at each corner tap point.")]
         [SerializeField] GameObject m_CornerMarkerPrefab;
@@ -158,9 +164,24 @@ namespace ZooBuilder
                 return null;
             }
 
+            // Pick the prefab matching the enclosure type
+            GameObject floorPrefab = type switch
+            {
+                EnclosureType.Enclosure1 => m_EnclosureFloorPrefab1,
+                EnclosureType.Enclosure2 => m_EnclosureFloorPrefab2,
+                EnclosureType.Enclosure3 => m_EnclosureFloorPrefab3,
+                _ => m_EnclosureFloorPrefab1
+            };
+
+            if (floorPrefab == null)
+            {
+                Debug.LogError($"[EnclosurePlacer] Floor prefab for {type} is not assigned in the Inspector.");
+                return null;
+            }
+
             // Spawn the floor
             Vector3 center = PolygonCentroid(points);
-            var floorGO = Instantiate(m_EnclosureFloorPrefab, center, Quaternion.identity);
+            var floorGO = Instantiate(floorPrefab, center, Quaternion.identity);
             floorGO.name = $"Enclosure_{(int)type}";
 
             // Parent to zoo root so zoo transformation works
