@@ -272,7 +272,9 @@ Panels switch automatically as `ZooManager.CurrentPhase` changes.
 ### ZooInputHandler.cs
 **Attach to:** `ZooManager` GameObject.
 
-Routes all touch input. Single-finger and two-finger gestures are handled here; `ZooTransformer` no longer has its own Update.
+Routes all touch input using **EnhancedTouch** (new Input System). Single-finger and two-finger gestures are handled here; `ZooTransformer` no longer has its own Update.
+
+Requires `EnhancedTouchSupport.Enable()` — handled automatically in `OnEnable/OnDisable`.
 
 **Tap routing (PlacementMode):**
 
@@ -291,7 +293,7 @@ Routes all touch input. Single-finger and two-finger gestures are handled here; 
 | 2-finger pinch | Scale enclosure | Scale whole zoo |
 | 2-finger twist | Rotate enclosure | Rotate whole zoo |
 
-> Two-finger target is decided on the **first frame** of the gesture — moving fingers off the enclosure won't switch targets mid-gesture.
+> Two-finger target is decided on the **first frame** of the gesture.
 
 | Inspector Field | Description |
 |----------------|-------------|
@@ -300,7 +302,7 @@ Routes all touch input. Single-finger and two-finger gestures are handled here; 
 | `AR Camera` | Used to convert screen delta to world-space movement |
 | `Zoo Transformer` | Reference for whole-zoo gestures |
 
-> **Note:** Uses `touch.fingerId` for UI overlap check — panels don't block AR plane taps.
+> **Note:** Uses `EnhancedTouch` (`Touch.activeTouches`) — legacy `Input.GetTouch()` does not work with the new Input System.
 
 ---
 
