@@ -1,7 +1,7 @@
 # ZooBuilder Scripts Guide
 
 > Auto-reminder: this file should be updated after every commit that modifies `Assets/ZooBuilder/Scripts/`.
-> Last updated: 2026-04-07
+> Last updated: 2026-04-07 — debug logs added to EnclosurePlacer and ZooInputHandler
 
 ---
 
