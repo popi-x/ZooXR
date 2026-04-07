@@ -28,9 +28,10 @@ namespace ZooBuilder
         [SerializeField] GameObject m_PanelComplete;
 
         [Header("Enclosure Placement")]
+        [SerializeField] Button m_BtnNextOrPath;          // "Next Enclosure" or "Draw Path"
+        [SerializeField] TextMeshProUGUI m_LblNextOrPath; // label on that button
         [SerializeField] Button m_BtnCancelEnclosure;
         [SerializeField] TextMeshProUGUI m_LblEnclosureStatus;
-        [SerializeField] Button m_BtnStartPathCreation;
 
         [Header("Path Creation")]
         [SerializeField] Button m_BtnBeginDraw;
@@ -132,8 +133,8 @@ namespace ZooBuilder
 
         void WireButtons()
         {
-            AddClick(m_BtnCancelEnclosure,   () => m_EnclosurePlacer?.CancelPlacement());
-            AddClick(m_BtnStartPathCreation, OnStartPathCreation);
+            AddClick(m_BtnNextOrPath,      OnNextOrPath);
+            AddClick(m_BtnCancelEnclosure, () => m_EnclosurePlacer?.CancelPlacement());
 
             // Path creation
             AddClick(m_BtnBeginDraw,   () => m_PathCreator?.BeginPath());
@@ -219,8 +220,27 @@ namespace ZooBuilder
             if (m_LblEnclosureStatus != null)
                 m_LblEnclosureStatus.text = $"Enclosures: {count}/3";
 
-            if (m_BtnStartPathCreation != null)
-                m_BtnStartPathCreation.interactable = count >= 3;
+            bool allPlaced = count >= 3;
+            if (m_LblNextOrPath != null)
+                m_LblNextOrPath.text = allPlaced ? "Draw Path" : "Next";
+            if (m_BtnNextOrPath != null)
+                m_BtnNextOrPath.interactable = true;
+        }
+
+        void OnNextOrPath()
+        {
+            int count = ZooManager.Instance?.Enclosures.Count ?? 0;
+            DeselectEnclosure();
+
+            if (count >= 3)
+            {
+                OnStartPathCreation();
+            }
+            else
+            {
+                // Advance to next enclosure ghost
+                m_EnclosurePlacer?.BeginPlacement();
+            }
         }
 
         void OnStartPathCreation()

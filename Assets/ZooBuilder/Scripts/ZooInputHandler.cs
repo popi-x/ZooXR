@@ -4,14 +4,19 @@ using UnityEngine.EventSystems;
 namespace ZooBuilder
 {
     /// <summary>
-    /// Routes touch input to the correct subsystem based on PlacementMode.
+    /// Routes all touch input:
     ///
-    /// When an enclosure is selected (PlacementMode.None + enclosure selected):
-    ///   - 1-finger drag  → move the enclosure
-    ///   - 2-finger pinch → scale the enclosure
-    ///   - 2-finger twist → rotate the enclosure
+    /// Tap:
+    ///   - EnclosureFloor mode → place enclosure, then auto-select it
+    ///   - Fence/Gate/Bin/Animal → place object
+    ///   - Path → place path segment
+    ///   - None → select/deselect enclosure or object
     ///
-    /// Otherwise 2-finger gestures go to ZooTransformer (whole zoo).
+    /// Single-finger drag on selected enclosure → move enclosure
+    ///
+    /// Two-finger gesture:
+    ///   - Started on enclosure → scale/rotate that enclosure
+    ///   - Started on empty space → ZooTransformer (whole zoo)
     /// </summary>
     public class ZooInputHandler : MonoBehaviour
     {
@@ -24,24 +29,25 @@ namespace ZooBuilder
 
         [SerializeField] float m_DragThreshold = 10f;
         [SerializeField] float m_EnclosureMoveSensitivity = 0.003f;
-        [SerializeField] float m_EnclosureRotateSensitivity = 0.3f;
+        [SerializeField] float m_EnclosureRotateSensitivity = 3f;
         [SerializeField] float m_EnclosureScaleSensitivity = 0.003f;
 
+        // Single-finger state
         Vector2 m_TouchStartPos;
-        bool m_IsDragging = false;
+        bool m_IsDragging;
 
         // Two-finger state
         float m_PrevPinchDist;
         float m_PrevTwistAngle;
-        bool m_TwoFingerActive = false;
+        bool m_TwoFingerActive;
+        bool m_TwoFingerOnEnclosure; // whether gesture started on enclosure
 
         void Update()
         {
-            int touchCount = Input.touchCount;
-            if (touchCount == 0) { m_TwoFingerActive = false; return; }
+            int count = Input.touchCount;
+            if (count == 0) { m_TwoFingerActive = false; return; }
 
-            // ── Two-finger gestures ───────────────────────────────────────────
-            if (touchCount >= 2)
+            if (count >= 2)
             {
                 m_IsDragging = false;
                 HandleTwoFingers();
@@ -50,9 +56,7 @@ namespace ZooBuilder
 
             m_TwoFingerActive = false;
 
-            // ── Single-finger ─────────────────────────────────────────────────
             var touch = Input.GetTouch(0);
-
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(touch.fingerId))
                 return;
 
@@ -64,35 +68,34 @@ namespace ZooBuilder
                     break;
 
                 case TouchPhase.Moved:
-                    if (Vector2.Distance(touch.position, m_TouchStartPos) > m_DragThreshold)
-                    {
+                    if (!m_IsDragging && Vector2.Distance(touch.position, m_TouchStartPos) > m_DragThreshold)
                         m_IsDragging = true;
+                    if (m_IsDragging)
                         OnSingleDrag(touch.position, touch.deltaPosition);
-                    }
                     break;
 
                 case TouchPhase.Ended:
-                    if (!m_IsDragging)
-                        OnTap(touch.position);
+                    if (!m_IsDragging) OnTap(touch.position);
                     m_IsDragging = false;
                     break;
             }
         }
 
-        // ── Two-finger handling ───────────────────────────────────────────────
+        // ── Two-finger ────────────────────────────────────────────────────────
 
         void HandleTwoFingers()
         {
             var t0 = Input.GetTouch(0);
             var t1 = Input.GetTouch(1);
 
-            float pinchDist  = Vector2.Distance(t0.position, t1.position);
-            Vector2 midpoint = (t0.position + t1.position) * 0.5f;
-            float angle      = Mathf.Atan2(t1.position.y - t0.position.y,
-                                           t1.position.x - t0.position.x) * Mathf.Rad2Deg;
+            float pinchDist = Vector2.Distance(t0.position, t1.position);
+            float angle     = Mathf.Atan2(t1.position.y - t0.position.y,
+                                          t1.position.x - t0.position.x) * Mathf.Rad2Deg;
 
             if (!m_TwoFingerActive)
             {
+                // Decide target on first frame: check if either finger is over an enclosure
+                m_TwoFingerOnEnclosure = HitsEnclosure(t0.position) || HitsEnclosure(t1.position);
                 m_PrevPinchDist  = pinchDist;
                 m_PrevTwistAngle = angle;
                 m_TwoFingerActive = true;
@@ -101,37 +104,35 @@ namespace ZooBuilder
 
             float pinchDelta = pinchDist - m_PrevPinchDist;
             float twistDelta = Mathf.DeltaAngle(m_PrevTwistAngle, angle);
-
             m_PrevPinchDist  = pinchDist;
             m_PrevTwistAngle = angle;
 
-            bool enclosureSelected = m_UIManager != null && m_UIManager.HasSelectedEnclosure;
-
-            if (enclosureSelected)
+            if (m_TwoFingerOnEnclosure && m_UIManager != null && m_UIManager.HasSelectedEnclosure)
             {
-                // Apply gestures to selected enclosure
                 if (Mathf.Abs(pinchDelta) > 0.5f)
-                {
-                    float factor = 1f + pinchDelta * m_EnclosureScaleSensitivity;
-                    m_UIManager.GestureScaleEnclosure(factor);
-                }
+                    m_UIManager.GestureScaleEnclosure(1f + pinchDelta * m_EnclosureScaleSensitivity);
                 if (Mathf.Abs(twistDelta) > 0.2f)
-                {
-                    m_UIManager.GestureRotateEnclosure(-twistDelta * m_EnclosureRotateSensitivity * 10f);
-                }
+                    m_UIManager.GestureRotateEnclosure(-twistDelta * m_EnclosureRotateSensitivity);
             }
             else
             {
-                // Apply gestures to whole zoo
-                m_ZooTransformer?.HandleTwoFingerGesture(pinchDelta, twistDelta, midpoint);
+                Vector2 mid = (t0.position + t1.position) * 0.5f;
+                m_ZooTransformer?.HandleTwoFingerGesture(pinchDelta, twistDelta, mid);
             }
+        }
+
+        bool HitsEnclosure(Vector2 screenPos)
+        {
+            if (Camera.main == null) return false;
+            Ray ray = Camera.main.ScreenPointToRay(screenPos);
+            if (!Physics.Raycast(ray, out RaycastHit hit, 100f)) return false;
+            return hit.collider.GetComponentInParent<EnclosureFloor>() != null;
         }
 
         // ── Single-finger drag ────────────────────────────────────────────────
 
         void OnSingleDrag(Vector2 screenPos, Vector2 screenDelta)
         {
-            // Path drawing
             if (ZooManager.Instance?.CurrentPhase == BuildPhase.CreatingPath)
             {
                 if (m_PathCreator != null && m_PathCreator.IsDrawing)
@@ -140,21 +141,15 @@ namespace ZooBuilder
             }
 
             // Move selected enclosure
-            bool enclosureSelected = m_UIManager != null && m_UIManager.HasSelectedEnclosure;
-            if (enclosureSelected && ZooManager.Instance?.CurrentPlacementMode == PlacementMode.None)
+            if (m_UIManager != null && m_UIManager.HasSelectedEnclosure
+                && ZooManager.Instance?.CurrentPlacementMode == PlacementMode.None
+                && m_ARCamera != null)
             {
-                // Convert screen delta to world-space XZ movement
-                Vector3 worldDelta = Vector3.zero;
-                if (m_ARCamera != null)
-                {
-                    Vector3 right   = m_ARCamera.transform.right;
-                    Vector3 forward = m_ARCamera.transform.forward;
-                    right.y = 0f; right.Normalize();
-                    forward.y = 0f; forward.Normalize();
-                    worldDelta = (right * screenDelta.x + forward * screenDelta.y)
-                                 * m_EnclosureMoveSensitivity;
-                }
-                m_UIManager.GestureMoveEnclosure(worldDelta);
+                Vector3 right   = m_ARCamera.transform.right;   right.y = 0f;   right.Normalize();
+                Vector3 forward = m_ARCamera.transform.forward; forward.y = 0f; forward.Normalize();
+                Vector3 delta   = (right * screenDelta.x + forward * screenDelta.y)
+                                  * m_EnclosureMoveSensitivity;
+                m_UIManager.GestureMoveEnclosure(delta);
             }
         }
 
@@ -167,7 +162,9 @@ namespace ZooBuilder
             switch (ZooManager.Instance.CurrentPlacementMode)
             {
                 case PlacementMode.EnclosureFloor:
-                    m_EnclosurePlacer?.TryPlace(screenPos);
+                    var floor = m_EnclosurePlacer?.TryPlace(screenPos);
+                    if (floor != null)
+                        m_UIManager?.SelectEnclosure(floor); // auto-select for gesture editing
                     break;
 
                 case PlacementMode.Fence:
@@ -187,32 +184,22 @@ namespace ZooBuilder
             }
         }
 
-        // ── Selection ─────────────────────────────────────────────────────────
-
         void TrySelect(Vector2 screenPos)
         {
             if (Camera.main == null) return;
-
             Ray ray = Camera.main.ScreenPointToRay(screenPos);
             if (!Physics.Raycast(ray, out RaycastHit hit, 100f))
             {
-                // Tapped empty space — deselect
                 m_UIManager?.DeselectEnclosure();
                 return;
             }
 
             var zooObj = hit.collider.GetComponentInParent<ZooObject>();
-            if (zooObj != null)
-            {
-                m_UIManager?.SelectObject(zooObj);
-                return;
-            }
+            if (zooObj != null) { m_UIManager?.SelectObject(zooObj); return; }
 
-            var floor = hit.collider.GetComponentInParent<EnclosureFloor>();
-            if (floor != null)
-                m_UIManager?.SelectEnclosure(floor);
-            else
-                m_UIManager?.DeselectEnclosure();
+            var enclosure = hit.collider.GetComponentInParent<EnclosureFloor>();
+            if (enclosure != null) m_UIManager?.SelectEnclosure(enclosure);
+            else m_UIManager?.DeselectEnclosure();
         }
     }
 }

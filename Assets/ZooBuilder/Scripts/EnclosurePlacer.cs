@@ -165,16 +165,11 @@ namespace ZooBuilder
 
             ZooManager.Instance.RegisterEnclosure(floor);
 
-            // If all 3 are placed, stop; otherwise show ghost for the next type
-            if (ZooManager.Instance.GetNextEnclosureType() == EnclosureType.None)
-            {
-                CancelPlacement();
-                ZooManager.Instance.SetPlacementModeExplicit(PlacementMode.None);
-            }
-            else
-            {
-                ShowGhost(ZooManager.Instance.GetNextEnclosureType());
-            }
+            // Hide ghost and switch to None mode so user can gesture-edit the placed enclosure.
+            // The UI "Next" button will call BeginPlacement() for the next type.
+            HideGhost();
+            m_IsActive = false;
+            ZooManager.Instance.SetPlacementModeExplicit(PlacementMode.None);
 
             return floor;
         }
