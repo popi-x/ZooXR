@@ -144,7 +144,7 @@ namespace ZooBuilder
 
             ZooManager.Instance.RegisterEnclosure(floor);
 
-            // If all 3 are placed, stop; otherwise keep active for the next one
+            // If all 3 are placed, stop; otherwise show ghost for the next type
             if (ZooManager.Instance.GetNextEnclosureType() == EnclosureType.None)
                 CancelPlacement();
             else

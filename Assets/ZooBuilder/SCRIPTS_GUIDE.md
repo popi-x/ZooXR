@@ -241,6 +241,10 @@ Connect all `[SerializeField]` references in the Inspector:
 
 **Key buttons:** Cancel Enclosure, Begin/Stop/Finalize Path, Open/Close Object Menu, Fence/Gate/Bin/Animal selectors, Delete, Undo, Redo, Check Requirements, Save
 
+**Debug / Testing toggles** (Inspector):
+- `Debug Skip Detection` — bypass plane detection, start in PlacingEnclosures phase
+- `Debug Enclosure Only` — suppress path/object panels for enclosure-only testing
+
 **System refs:** `EnclosurePlacer`, `PathCreator`, `ZooObjectPlacer`, `ZooSaveManager`, `ZooRequirementsChecker`, `ZooTransformer`
 
 Panels switch automatically as `ZooManager.CurrentPhase` changes.

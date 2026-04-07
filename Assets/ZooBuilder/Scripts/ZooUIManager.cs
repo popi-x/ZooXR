@@ -28,9 +28,6 @@ namespace ZooBuilder
         [SerializeField] GameObject m_PanelComplete;
 
         [Header("Enclosure Placement")]
-        [SerializeField] Button m_BtnAddCorner;
-        [SerializeField] Button m_BtnRemoveCorner;
-        [SerializeField] Button m_BtnConfirmEnclosure;
         [SerializeField] Button m_BtnCancelEnclosure;
         [SerializeField] TextMeshProUGUI m_LblEnclosureStatus;
         [SerializeField] Button m_BtnStartPathCreation;
@@ -153,9 +150,8 @@ namespace ZooBuilder
 
         void WireButtons()
         {
-            // Enclosure placement — taps are handled by ZooInputHandler (TryPlace)
-            AddClick(m_BtnCancelEnclosure, () => m_EnclosurePlacer?.CancelPlacement());
-            AddClick(m_BtnStartPathCreation,  OnStartPathCreation);
+            AddClick(m_BtnCancelEnclosure,   () => m_EnclosurePlacer?.CancelPlacement());
+            AddClick(m_BtnStartPathCreation, OnStartPathCreation);
 
             // Path creation
             AddClick(m_BtnBeginDraw,   () => m_PathCreator?.BeginPath());
@@ -242,20 +238,15 @@ namespace ZooBuilder
 
         // ── Enclosure actions ─────────────────────────────────────────────────
 
-        // Enclosure placement now happens via tap (ZooInputHandler → EnclosurePlacer.TryPlace).
-        // ZooManager fires OnEnclosureListChanged which calls RefreshEnclosureUI automatically.
-
         void RefreshEnclosureUI()
         {
             int count = ZooManager.Instance?.Enclosures.Count ?? 0;
+
             if (m_LblEnclosureStatus != null)
                 m_LblEnclosureStatus.text = $"Enclosures: {count}/3";
 
             if (m_BtnStartPathCreation != null)
                 m_BtnStartPathCreation.interactable = count >= 3;
-
-            if (m_LblCornerCount != null && m_EnclosurePlacer != null)
-                m_LblCornerCount.text = $"Corners: {m_EnclosurePlacer.CornerCount}";
         }
 
         void OnStartPathCreation()
