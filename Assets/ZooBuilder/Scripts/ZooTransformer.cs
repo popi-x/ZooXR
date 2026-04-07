@@ -30,12 +30,6 @@ namespace ZooBuilder
         Transform m_ZooRoot;
         float m_CurrentScale = 1.0f;
 
-        // For pinch-to-zoom and twist-to-rotate gesture tracking
-        float m_PrevPinchDist = -1f;
-        float m_PrevTwistAngle = -1f;
-        Vector2 m_PrevDragPos = Vector2.zero;
-        bool m_IsDragging = false;
-
         // AR plane Y level for clamping translation
         float m_PlaneY = 0f;
         bool m_PlaneYSet = false;
@@ -108,100 +102,19 @@ namespace ZooBuilder
             }
         }
 
-        // ── Two-finger gesture handling ──────────────────────────────────────
+        // ── Called by ZooInputHandler ────────────────────────────────────────
 
         /// <summary>
-        /// Call every frame with the current touch positions.
-        /// Handles:
-        ///   - One finger drag  → translate
-        ///   - Two finger pinch → scale
-        ///   - Two finger twist → rotate
+        /// Apply two-finger pinch/twist to the whole zoo.
+        /// Called by ZooInputHandler when no enclosure is selected.
         /// </summary>
-        public void HandleTouches(Touch[] touches)
+        public void HandleTwoFingerGesture(float pinchDelta, float twistDelta, Vector2 midpoint)
         {
-            if (touches.Length == 1)
-            {
-                HandleSingleFingerDrag(touches[0]);
-                m_PrevPinchDist = -1f;
-                m_PrevTwistAngle = -1f;
-            }
-            else if (touches.Length == 2)
-            {
-                m_IsDragging = false;
-                m_PrevDragPos = Vector2.zero;
-                HandleTwoFingerGesture(touches[0], touches[1]);
-            }
-            else
-            {
-                ResetGestureState();
-            }
-        }
+            if (Mathf.Abs(pinchDelta) > 0.5f)
+                Scale(1f + pinchDelta * m_ScaleSensitivity);
 
-        void HandleSingleFingerDrag(Touch t)
-        {
-            if (t.phase == TouchPhase.Began)
-            {
-                m_PrevDragPos = t.position;
-                m_IsDragging = true;
-            }
-            else if (t.phase == TouchPhase.Moved && m_IsDragging)
-            {
-                Vector2 delta = t.position - m_PrevDragPos;
-                m_PrevDragPos = t.position;
-                Translate(new Vector3(delta.x * m_TranslateSensitivity, 0f,
-                                      delta.y * m_TranslateSensitivity));
-            }
-            else if (t.phase == TouchPhase.Ended || t.phase == TouchPhase.Canceled)
-            {
-                m_IsDragging = false;
-            }
-        }
-
-        void HandleTwoFingerGesture(Touch t0, Touch t1)
-        {
-            Vector2 pos0 = t0.position;
-            Vector2 pos1 = t1.position;
-
-            float pinchDist = Vector2.Distance(pos0, pos1);
-            float twistAngle = Mathf.Atan2(pos1.y - pos0.y, pos1.x - pos0.x) * Mathf.Rad2Deg;
-
-            if (t0.phase == TouchPhase.Began || t1.phase == TouchPhase.Began)
-            {
-                m_PrevPinchDist = pinchDist;
-                m_PrevTwistAngle = twistAngle;
-                return;
-            }
-
-            if (m_PrevPinchDist > 0f)
-            {
-                float pinchDelta = pinchDist - m_PrevPinchDist;
-                if (Mathf.Abs(pinchDelta) > 1f)
-                    Scale(1f + pinchDelta * m_ScaleSensitivity);
-            }
-
-            if (m_PrevTwistAngle >= 0f)
-            {
-                float twistDelta = Mathf.DeltaAngle(m_PrevTwistAngle, twistAngle);
-                if (Mathf.Abs(twistDelta) > 0.5f)
-                    RotateY(-twistDelta * m_RotateSensitivity);
-            }
-
-            m_PrevPinchDist = pinchDist;
-            m_PrevTwistAngle = twistAngle;
-        }
-
-        void ResetGestureState()
-        {
-            m_PrevPinchDist = -1f;
-            m_PrevTwistAngle = -1f;
-            m_IsDragging = false;
-        }
-
-        void Update()
-        {
-            // Handle touch gestures automatically each frame
-            if (Input.touchCount > 0)
-                HandleTouches(Input.touches);
+            if (Mathf.Abs(twistDelta) > 0.2f)
+                RotateY(-twistDelta * m_RotateSensitivity);
         }
 
         public float CurrentScale => m_CurrentScale;

@@ -56,22 +56,9 @@ namespace ZooBuilder
         [SerializeField] Button m_BtnUndo;
         [SerializeField] Button m_BtnRedo;
 
-        [Header("Zoo Transform Buttons")]
-        [SerializeField] Button m_BtnTranslateMode;
-        [SerializeField] Button m_BtnRotateMode;
-        [SerializeField] Button m_BtnScaleMode;
-
-        [Header("Enclosure Edit Buttons (pre-path)")]
-        [SerializeField] GameObject m_PanelEnclosureEdit;
+        [Header("Enclosure Edit")]
         [SerializeField] Button m_BtnDeleteEnclosure;
-        [SerializeField] Button m_BtnMoveEnclosureLeft;
-        [SerializeField] Button m_BtnMoveEnclosureRight;
-        [SerializeField] Button m_BtnMoveEnclosureFwd;
-        [SerializeField] Button m_BtnMoveEnclosureBack;
-        [SerializeField] Button m_BtnRotateEnclosureCW;
-        [SerializeField] Button m_BtnRotateEnclosureCCW;
-        [SerializeField] Button m_BtnScaleEnclosureUp;
-        [SerializeField] Button m_BtnScaleEnclosureDown;
+        [SerializeField] GameObject m_PanelEnclosureEdit;
 
         [Header("Requirements & Save")]
         [SerializeField] Button m_BtnCheckRequirements;
@@ -96,11 +83,6 @@ namespace ZooBuilder
         [SerializeField] ZooSaveManager m_SaveManager;
         [SerializeField] ZooRequirementsChecker m_RequirementsChecker;
         [SerializeField] ZooTransformer m_ZooTransformer;
-
-        [Header("Enclosure Edit Settings")]
-        [SerializeField] float m_EnclosureMoveStep = 0.1f;
-        [SerializeField] float m_EnclosureRotateStep = 15f;
-        [SerializeField] float m_EnclosureScaleStep = 1.1f;
 
         EnclosureFloor m_SelectedEnclosure = null;
         ZooObject m_SelectedObject = null;
@@ -175,16 +157,8 @@ namespace ZooBuilder
             AddClick(m_BtnUndo,         () => { UndoRedoManager.Instance?.Undo(); RefreshUndoRedoButtons(); });
             AddClick(m_BtnRedo,         () => { UndoRedoManager.Instance?.Redo(); RefreshUndoRedoButtons(); });
 
-            // Enclosure editing
-            AddClick(m_BtnDeleteEnclosure,    OnDeleteSelectedEnclosure);
-            AddClick(m_BtnMoveEnclosureLeft,  () => MoveEnclosure(Vector3.left));
-            AddClick(m_BtnMoveEnclosureRight, () => MoveEnclosure(Vector3.right));
-            AddClick(m_BtnMoveEnclosureFwd,   () => MoveEnclosure(Vector3.forward));
-            AddClick(m_BtnMoveEnclosureBack,  () => MoveEnclosure(Vector3.back));
-            AddClick(m_BtnRotateEnclosureCW,  () => RotateEnclosure(-m_EnclosureRotateStep));
-            AddClick(m_BtnRotateEnclosureCCW, () => RotateEnclosure(m_EnclosureRotateStep));
-            AddClick(m_BtnScaleEnclosureUp,   () => ScaleEnclosure(m_EnclosureScaleStep));
-            AddClick(m_BtnScaleEnclosureDown, () => ScaleEnclosure(1f / m_EnclosureScaleStep));
+            // Enclosure editing (gesture-driven; only delete needs a button)
+            AddClick(m_BtnDeleteEnclosure, OnDeleteSelectedEnclosure);
 
             // Requirements & Save
             AddClick(m_BtnCheckRequirements, ShowRequirements);
@@ -294,7 +268,7 @@ namespace ZooBuilder
             if (m_BtnDeleteObject != null) m_BtnDeleteObject.interactable = false;
         }
 
-        // ── Enclosure editing (pre-path) ──────────────────────────────────────
+        // ── Enclosure editing (gesture-driven) ───────────────────────────────
 
         void OnDeleteSelectedEnclosure()
         {
@@ -310,22 +284,22 @@ namespace ZooBuilder
             if (m_PanelEnclosureEdit != null) m_PanelEnclosureEdit.SetActive(false);
         }
 
-        void MoveEnclosure(Vector3 dir)
+        // Called by ZooInputHandler when gestures are applied to the selected enclosure
+        public void GestureMoveEnclosure(Vector3 worldDelta)
         {
             if (m_SelectedEnclosure == null || !m_SelectedEnclosure.CanBeModified()) return;
-            m_SelectedEnclosure.MoveFloor(dir * m_EnclosureMoveStep);
+            m_SelectedEnclosure.MoveFloor(worldDelta);
         }
 
-        void RotateEnclosure(float deg)
+        public void GestureRotateEnclosure(float degrees)
         {
             if (m_SelectedEnclosure == null || !m_SelectedEnclosure.CanBeModified()) return;
-            m_SelectedEnclosure.RotateFloor(deg);
+            m_SelectedEnclosure.RotateFloor(degrees);
         }
 
-        void ScaleEnclosure(float factor)
+        public void GestureScaleEnclosure(float factor)
         {
             if (m_SelectedEnclosure == null || !m_SelectedEnclosure.CanBeModified()) return;
-            // Validate no overlap after scaling
             var verts = m_SelectedEnclosure.WorldVertices;
             if (verts != null && ZooManager.Instance.PolygonOverlapsAnyEnclosure(verts, m_SelectedEnclosure))
             {
@@ -334,6 +308,8 @@ namespace ZooBuilder
             }
             m_SelectedEnclosure.ScaleFloor(factor);
         }
+
+        public bool HasSelectedEnclosure => m_SelectedEnclosure != null;
 
         // ── Object menu ───────────────────────────────────────────────────────
 
@@ -413,6 +389,12 @@ namespace ZooBuilder
             bool canEdit = floor != null && floor.CanBeModified();
             if (m_PanelEnclosureEdit != null)
                 m_PanelEnclosureEdit.SetActive(canEdit);
+        }
+
+        public void DeselectEnclosure()
+        {
+            m_SelectedEnclosure = null;
+            if (m_PanelEnclosureEdit != null) m_PanelEnclosureEdit.SetActive(false);
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
