@@ -56,6 +56,7 @@ namespace ZooBuilder
                 return;
             }
             m_IsActive = true;
+            ZooManager.Instance.SetPlacementModeExplicit(PlacementMode.EnclosureFloor);
             ShowGhost(next);
         }
 
@@ -146,9 +147,14 @@ namespace ZooBuilder
 
             // If all 3 are placed, stop; otherwise show ghost for the next type
             if (ZooManager.Instance.GetNextEnclosureType() == EnclosureType.None)
+            {
                 CancelPlacement();
+                ZooManager.Instance.SetPlacementModeExplicit(PlacementMode.None);
+            }
             else
+            {
                 ShowGhost(ZooManager.Instance.GetNextEnclosureType());
+            }
 
             return floor;
         }
