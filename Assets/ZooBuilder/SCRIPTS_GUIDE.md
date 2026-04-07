@@ -82,10 +82,16 @@ Key rules enforced automatically:
 **Debug / Testing:**
 | Inspector Field | Description |
 |----------------|-------------|
-| `Debug Fallback Placement` | When enabled, if AR raycast finds no plane, place enclosure in front of camera instead. Use in editor or simulator. |
-| `Debug Place Distance` | How far in front of camera to place (default 1.5 m) |
+| `Debug Fallback Placement` | If AR raycast finds no plane, place in front of camera instead |
+| `Debug Place Distance` | Distance in front of camera for fallback (default 1.5 m) |
 
-**Workflow:** Tap the AR plane → enclosure prefab placed immediately. Enclosures are placed in order (1 → 2 → 3). Ghost preview follows the screen centre while active.
+**Placement flow:**
+1. `BeginPlacement()` → Ghost for Enclosure 1 appears
+2. Player taps AR plane → Enclosure 1 placed, auto-selected for gesture editing
+3. Player gestures to resize/reposition (via `ZooInputHandler`)
+4. Player taps **Next** button → ghost for Enclosure 2 appears (`BeginPlacement()` called again)
+5. Repeat for Enclosure 3 → **Next** becomes **Draw Path**
+6. Once path phase starts, all enclosures are locked
 
 On real device: requires a detected AR horizontal plane.  
 In editor/simulator: enable `Debug Fallback Placement` to place without a real plane.
@@ -245,7 +251,14 @@ Connect all `[SerializeField]` references in the Inspector:
 
 **Phase panels:** `m_PanelDetecting`, `m_PanelPlacingEnclosures`, `m_PanelPathCreation`, `m_PanelPlacingObjects`, `m_PanelComplete`
 
-**Key buttons:** Cancel Enclosure, Begin/Stop/Finalize Path, Open/Close Object Menu, Fence/Gate/Bin/Animal selectors, Delete Object, **Delete Enclosure** (only button needed for enclosure editing — move/rotate/scale via gesture), Undo, Redo, Check Requirements, Save
+**Enclosure panel buttons:**
+| Button | Field | Description |
+|--------|-------|-------------|
+| Next / Draw Path | `Btn Next Or Path` | While < 3 placed: advance to next enclosure ghost. After all 3: start path phase |
+| Cancel | `Btn Cancel Enclosure` | Cancel current ghost placement |
+| Delete Enclosure | `Btn Delete Enclosure` | Delete the selected enclosure (move/rotate/scale via gesture) |
+
+**Other buttons:** Begin/Stop/Finalize Path, Open/Close Object Menu, Fence/Gate/Bin/Animal selectors, Delete Object, Undo, Redo, Check Requirements, Save
 
 **Debug / Testing toggles** (Inspector):
 - `Debug Skip Detection` — bypass plane detection, start in PlacingEnclosures phase
@@ -266,18 +279,20 @@ Routes all touch input. Single-finger and two-finger gestures are handled here; 
 
 | Mode | Tap action |
 |------|-----------|
-| EnclosureFloor | `EnclosurePlacer.TryPlace()` |
+| EnclosureFloor | Place enclosure → auto-select it for gesture editing |
 | Fence/Gate/Bin/Animal | `ZooObjectPlacer.TryPlaceObject()` |
 | Path | `PathCreator.PlacePathSegment()` |
 | None | Select/deselect object or enclosure |
 
-**Gesture routing:**
+**Gesture routing (based on where fingers touch down):**
 
-| Gesture | Enclosure selected | Nothing selected |
-|---------|-------------------|-----------------|
-| 1-finger drag | Move enclosure | (no action) |
+| Gesture | Fingers on enclosure | Fingers on empty space |
+|---------|---------------------|----------------------|
+| 1-finger drag | Move selected enclosure | (no action) |
 | 2-finger pinch | Scale enclosure | Scale whole zoo |
 | 2-finger twist | Rotate enclosure | Rotate whole zoo |
+
+> Two-finger target is decided on the **first frame** of the gesture — moving fingers off the enclosure won't switch targets mid-gesture.
 
 | Inspector Field | Description |
 |----------------|-------------|
