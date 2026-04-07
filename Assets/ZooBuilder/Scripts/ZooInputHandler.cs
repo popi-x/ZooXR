@@ -65,7 +65,7 @@ namespace ZooBuilder
             switch (ZooManager.Instance.CurrentPlacementMode)
             {
                 case PlacementMode.EnclosureFloor:
-                    m_EnclosurePlacer?.TryAddCorner(screenPos);
+                    m_EnclosurePlacer?.TryPlace(screenPos);
                     break;
 
                 case PlacementMode.Fence:

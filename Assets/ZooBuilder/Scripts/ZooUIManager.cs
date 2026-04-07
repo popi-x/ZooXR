@@ -137,11 +137,8 @@ namespace ZooBuilder
 
         void WireButtons()
         {
-            // Enclosure placement
-            AddClick(m_BtnAddCorner,          () => { /* handled by tap in ZooInputHandler */ });
-            AddClick(m_BtnRemoveCorner,       () => m_EnclosurePlacer?.RemoveLastCorner());
-            AddClick(m_BtnConfirmEnclosure,   OnConfirmEnclosure);
-            AddClick(m_BtnCancelEnclosure,    () => m_EnclosurePlacer?.CancelPlacement());
+            // Enclosure placement — taps are handled by ZooInputHandler (TryPlace)
+            AddClick(m_BtnCancelEnclosure, () => m_EnclosurePlacer?.CancelPlacement());
             AddClick(m_BtnStartPathCreation,  OnStartPathCreation);
 
             // Path creation
@@ -218,20 +215,8 @@ namespace ZooBuilder
 
         // ── Enclosure actions ─────────────────────────────────────────────────
 
-        void OnConfirmEnclosure()
-        {
-            var floor = m_EnclosurePlacer?.ConfirmPlacement();
-            if (floor != null)
-            {
-                m_SelectedEnclosure = floor;
-                RefreshEnclosureUI();
-                // Auto-start next enclosure placement if we still need more
-                if (ZooManager.Instance.GetNextEnclosureType() != EnclosureType.None)
-                    m_EnclosurePlacer.BeginPlacement();
-                if (m_PanelEnclosureEdit != null && !ZooManager.Instance.PathCreationStarted)
-                    m_PanelEnclosureEdit.SetActive(true);
-            }
-        }
+        // Enclosure placement now happens via tap (ZooInputHandler → EnclosurePlacer.TryPlace).
+        // ZooManager fires OnEnclosureListChanged which calls RefreshEnclosureUI automatically.
 
         void RefreshEnclosureUI()
         {
