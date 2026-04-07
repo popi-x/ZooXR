@@ -79,7 +79,16 @@ Key rules enforced automatically:
 | `Ghost Prefab 1/2/3` | Semi-transparent preview shown before tapping (optional) |
 | `Face Camera` | Rotate enclosure to face camera on placement (default on) |
 
+**Debug / Testing:**
+| Inspector Field | Description |
+|----------------|-------------|
+| `Debug Fallback Placement` | When enabled, if AR raycast finds no plane, place enclosure in front of camera instead. Use in editor or simulator. |
+| `Debug Place Distance` | How far in front of camera to place (default 1.5 m) |
+
 **Workflow:** Tap the AR plane → enclosure prefab placed immediately. Enclosures are placed in order (1 → 2 → 3). Ghost preview follows the screen centre while active.
+
+On real device: requires a detected AR horizontal plane.  
+In editor/simulator: enable `Debug Fallback Placement` to place without a real plane.
 
 ---
 
