@@ -94,6 +94,8 @@ Key rules enforced automatically:
 On real device: requires a detected AR horizontal plane.  
 In editor/simulator: enable `Debug Fallback Placement` to place without a real plane.
 
+> **Mesh collision note:** Floor polygon uses the 4 bounding-box corners of the renderer at floor Y, not all mesh vertices. This avoids degenerate triangles from complex prefabs (e.g. cubes with 24 vertices).
+
 ---
 
 ### ZooObject.cs
