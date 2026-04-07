@@ -197,7 +197,8 @@ namespace ZooBuilder
 
         public GameObject GetPrefabById(string id)
         {
-            m_PrefabDict?.TryGetValue(id, out var prefab);
+            if (m_PrefabDict == null) return null;
+            m_PrefabDict.TryGetValue(id, out GameObject prefab);
             return prefab;
         }
     }
