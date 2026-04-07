@@ -3,5 +3,19 @@
     "allow": [
       "Bash(git push *)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // \"\"' | { read -r cmd; if echo \"$cmd\" | grep -q \"git commit\"; then changed=$(git -C /home/user/ZooXR diff HEAD~1 HEAD --name-only 2>/dev/null | grep \"Assets/ZooBuilder/Scripts/.*\\.cs\" || true); if [ -n \"$changed\" ]; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"ZooBuilder scripts were modified in this commit. Please regenerate Assets/ZooBuilder/SCRIPTS_GUIDE.md to reflect the latest changes before pushing.\"}}'; fi; fi; } 2>/dev/null || true",
+            "statusMessage": "Checking if SCRIPTS_GUIDE.md needs updating..."
+          }
+        ]
+      }
+    ]
   }
 }
