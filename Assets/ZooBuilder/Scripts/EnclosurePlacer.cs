@@ -42,21 +42,41 @@ namespace ZooBuilder
 
         bool m_IsActive = false;
         GameObject m_ActiveGhost = null;
+        EnclosureType m_TargetType = EnclosureType.None;
 
         // ── Activation ────────────────────────────────────────────────────────
 
-        /// <summary>Starts placement mode for the next enclosure type.</summary>
+        /// <summary>Starts placement mode — call SelectType() first to pick which enclosure.</summary>
         public void BeginPlacement()
         {
+            // No-op here; placement is driven by SelectType()
+        }
+
+        /// <summary>
+        /// User selects which enclosure type to place next.
+        /// Ignored if that type is already placed.
+        /// </summary>
+        public void SelectType(EnclosureType type)
+        {
             if (ZooManager.Instance == null) return;
-            EnclosureType next = ZooManager.Instance.GetNextEnclosureType();
-            if (next == EnclosureType.None)
+            if (type == EnclosureType.None) return;
+
+            // Already placed?
+            foreach (var enc in ZooManager.Instance.Enclosures)
             {
-                Debug.LogWarning("[EnclosurePlacer] All 3 enclosures already placed.");
-                return;
+                if (enc.EnclosureType == type)
+                {
+                    Debug.LogWarning($"[EnclosurePlacer] {type} is already placed.");
+                    return;
+                }
             }
+
+            m_TargetType = type;
             m_IsActive = true;
-            ShowGhost(next);
+            ShowGhost(type);
+
+            // Set placement mode so input handler routes taps here
+            ZooManager.Instance.SetPlacementModeExplicit(PlacementMode.EnclosureFloor);
         }
 
         /// <summary>Cancels placement mode and hides the ghost.</summary>
@@ -108,7 +128,7 @@ namespace ZooBuilder
             var hit = s_Hits[0];
             if (!IsHorizontal(hit.trackable as ARPlane)) return null;
 
-            EnclosureType type = ZooManager.Instance.GetNextEnclosureType();
+            EnclosureType type = m_TargetType;
             if (type == EnclosureType.None) return null;
 
             GameObject prefab = GetPrefabForType(type);
@@ -144,11 +164,10 @@ namespace ZooBuilder
 
             ZooManager.Instance.RegisterEnclosure(floor);
 
-            // If all 3 are placed, stop; otherwise keep active for the next one
-            if (ZooManager.Instance.GetNextEnclosureType() == EnclosureType.None)
-                CancelPlacement();
-            else
-                ShowGhost(ZooManager.Instance.GetNextEnclosureType());
+            // Done placing this type — deactivate and reset mode
+            m_TargetType = EnclosureType.None;
+            CancelPlacement();
+            ZooManager.Instance.SetPlacementModeExplicit(PlacementMode.None);
 
             return floor;
         }

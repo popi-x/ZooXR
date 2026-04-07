@@ -28,9 +28,9 @@ namespace ZooBuilder
         [SerializeField] GameObject m_PanelComplete;
 
         [Header("Enclosure Placement")]
-        [SerializeField] Button m_BtnAddCorner;
-        [SerializeField] Button m_BtnRemoveCorner;
-        [SerializeField] Button m_BtnConfirmEnclosure;
+        [SerializeField] Button m_BtnSelectEnclosure1;
+        [SerializeField] Button m_BtnSelectEnclosure2;
+        [SerializeField] Button m_BtnSelectEnclosure3;
         [SerializeField] Button m_BtnCancelEnclosure;
         [SerializeField] TextMeshProUGUI m_LblEnclosureStatus;
         [SerializeField] Button m_BtnStartPathCreation;
@@ -153,9 +153,12 @@ namespace ZooBuilder
 
         void WireButtons()
         {
-            // Enclosure placement — taps are handled by ZooInputHandler (TryPlace)
-            AddClick(m_BtnCancelEnclosure, () => m_EnclosurePlacer?.CancelPlacement());
-            AddClick(m_BtnStartPathCreation,  OnStartPathCreation);
+            // Enclosure type selection
+            AddClick(m_BtnSelectEnclosure1, () => SelectEnclosureType(EnclosureType.Enclosure1));
+            AddClick(m_BtnSelectEnclosure2, () => SelectEnclosureType(EnclosureType.Enclosure2));
+            AddClick(m_BtnSelectEnclosure3, () => SelectEnclosureType(EnclosureType.Enclosure3));
+            AddClick(m_BtnCancelEnclosure,  () => m_EnclosurePlacer?.CancelPlacement());
+            AddClick(m_BtnStartPathCreation, OnStartPathCreation);
 
             // Path creation
             AddClick(m_BtnBeginDraw,   () => m_PathCreator?.BeginPath());
@@ -242,20 +245,36 @@ namespace ZooBuilder
 
         // ── Enclosure actions ─────────────────────────────────────────────────
 
-        // Enclosure placement now happens via tap (ZooInputHandler → EnclosurePlacer.TryPlace).
-        // ZooManager fires OnEnclosureListChanged which calls RefreshEnclosureUI automatically.
+        void SelectEnclosureType(EnclosureType type)
+        {
+            m_EnclosurePlacer?.SelectType(type);
+        }
 
         void RefreshEnclosureUI()
         {
-            int count = ZooManager.Instance?.Enclosures.Count ?? 0;
+            var enclosures = ZooManager.Instance?.Enclosures;
+            int count = enclosures?.Count ?? 0;
+
             if (m_LblEnclosureStatus != null)
                 m_LblEnclosureStatus.text = $"Enclosures: {count}/3";
 
             if (m_BtnStartPathCreation != null)
                 m_BtnStartPathCreation.interactable = count >= 3;
 
-            if (m_LblCornerCount != null && m_EnclosurePlacer != null)
-                m_LblCornerCount.text = $"Corners: {m_EnclosurePlacer.CornerCount}";
+            // Disable each button once its enclosure type is placed
+            bool has1 = false, has2 = false, has3 = false;
+            if (enclosures != null)
+            {
+                foreach (var e in enclosures)
+                {
+                    if (e.EnclosureType == EnclosureType.Enclosure1) has1 = true;
+                    if (e.EnclosureType == EnclosureType.Enclosure2) has2 = true;
+                    if (e.EnclosureType == EnclosureType.Enclosure3) has3 = true;
+                }
+            }
+            if (m_BtnSelectEnclosure1 != null) m_BtnSelectEnclosure1.interactable = !has1;
+            if (m_BtnSelectEnclosure2 != null) m_BtnSelectEnclosure2.interactable = !has2;
+            if (m_BtnSelectEnclosure3 != null) m_BtnSelectEnclosure3.interactable = !has3;
         }
 
         void OnStartPathCreation()
