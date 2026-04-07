@@ -276,6 +276,8 @@ Routes touch input based on `ZooManager.CurrentPlacementMode`:
 |----------------|-------------|
 | `Drag Threshold` | Pixels moved before a tap becomes a drag (default 10) |
 
+> **Note:** Uses `touch.fingerId` (not `-1`) for UI overlap check, so UI panels don't accidentally block AR plane taps.
+
 ---
 
 ### ZooARPlaneWatcher.cs
