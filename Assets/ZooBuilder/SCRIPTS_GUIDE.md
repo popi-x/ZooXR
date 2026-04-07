@@ -76,7 +76,6 @@ Key rules enforced automatically:
 | `Enclosure Floor Prefab 1` | Prefab for Enclosure 1 (static animals) |
 | `Enclosure Floor Prefab 2` | Prefab for Enclosure 2 (roaming animals) |
 | `Enclosure Floor Prefab 3` | Prefab for Enclosure 3 (hungry animal) |
-| `Ghost Prefab 1/2/3` | Semi-transparent preview shown before tapping. **Optional** — if not assigned, the real enclosure prefab is used automatically with alpha set to 0.4. |
 | `Face Camera` | Rotate enclosure to face camera on placement (default on) |
 
 **Debug / Testing:**
@@ -85,13 +84,12 @@ Key rules enforced automatically:
 | `Debug Fallback Placement` | If AR raycast finds no plane, place in front of camera instead |
 | `Debug Place Distance` | Distance in front of camera for fallback (default 1.5 m) |
 
-**Placement flow:**
-1. `BeginPlacement()` → Ghost for Enclosure 1 appears
-2. Player taps AR plane → Enclosure 1 placed, auto-selected for gesture editing
+**Placement flow (no ghost — tap to place directly):**
+1. `BeginPlacement()` → PlacementMode set to EnclosureFloor
+2. Player taps AR plane → enclosure placed at hit position, auto-selected for gesture editing
 3. Player gestures to resize/reposition (via `ZooInputHandler`)
-4. Player taps **Next** button → ghost for Enclosure 2 appears (`BeginPlacement()` called again)
-5. Repeat for Enclosure 3 → **Next** becomes **Draw Path**
-6. Once path phase starts, all enclosures are locked
+4. Player taps **Next** → `BeginPlacement()` called for next type; **Next** becomes **Draw Path** after all 3
+5. Once path phase starts, all enclosures are locked
 
 On real device: requires a detected AR horizontal plane.  
 In editor/simulator: enable `Debug Fallback Placement` to place without a real plane.
