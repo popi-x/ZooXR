@@ -39,7 +39,6 @@ namespace ZooBuilder
         EnclosureType m_TargetAnimalEnclosureType = EnclosureType.Enclosure1;
 
         Dictionary<string, GameObject> m_PrefabDict;
-        bool m_Initialized = false;
 
         // ── Lifecycle ────────────────────────────────────────────────────────
 
@@ -57,7 +56,6 @@ namespace ZooBuilder
                 if (!string.IsNullOrEmpty(entry.id) && entry.prefab != null)
                     m_PrefabDict[entry.id] = entry.prefab;
             }
-            m_Initialized = true;
         }
 
         // ── Public API ───────────────────────────────────────────────────────

@@ -23,7 +23,6 @@ namespace ZooBuilder
         [SerializeField] float m_MaxScale = 5.0f;
 
         [Header("Touch Sensitivity")]
-        [SerializeField] float m_TranslateSensitivity = 0.01f;
         [SerializeField] float m_RotateSensitivity = 0.3f;
         [SerializeField] float m_ScaleSensitivity = 0.005f;
 
