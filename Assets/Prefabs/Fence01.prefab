@@ -128,7 +128,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ZooBuilder.ZooObject
   m_ObjectType: 0
-  m_PrefabId: 
+  m_PrefabId: fence
 --- !u!114 &3276203776832487286
 MonoBehaviour:
   m_ObjectHideFlags: 0

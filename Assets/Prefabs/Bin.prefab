@@ -127,4 +127,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ZooBuilder.ZooObject
   m_ObjectType: 2
-  m_PrefabId: 
+  m_PrefabId: bin
