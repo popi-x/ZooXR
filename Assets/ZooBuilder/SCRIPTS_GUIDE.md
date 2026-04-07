@@ -76,7 +76,7 @@ Key rules enforced automatically:
 | `Enclosure Floor Prefab 1` | Prefab for Enclosure 1 (static animals) |
 | `Enclosure Floor Prefab 2` | Prefab for Enclosure 2 (roaming animals) |
 | `Enclosure Floor Prefab 3` | Prefab for Enclosure 3 (hungry animal) |
-| `Ghost Prefab 1/2/3` | Semi-transparent preview shown before tapping (optional) |
+| `Ghost Prefab 1/2/3` | Semi-transparent preview shown before tapping. **Optional** — if not assigned, the real enclosure prefab is used automatically with alpha set to 0.4. |
 | `Face Camera` | Rotate enclosure to face camera on placement (default on) |
 
 **Debug / Testing:**
