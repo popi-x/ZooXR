@@ -4,6 +4,7 @@
 #
 .utmp/
 /[Ll]ibrary/
+/*BackUpThisFolder_ButDontShipItWithYourGame/
 /[Tt]emp/
 /[Oo]bj/
 /[Bb]uild/
