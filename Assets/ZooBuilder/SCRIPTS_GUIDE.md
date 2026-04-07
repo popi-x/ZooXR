@@ -1,7 +1,7 @@
 # ZooBuilder Scripts Guide
 
 > Auto-reminder: this file should be updated after every commit that modifies `Assets/ZooBuilder/Scripts/`.
-> Last updated: 2026-04-07
+> Last updated: 2026-04-07 (enclosure type selection)
 
 ---
 
@@ -79,7 +79,15 @@ Key rules enforced automatically:
 | `Ghost Prefab 1/2/3` | Semi-transparent preview shown before tapping (optional) |
 | `Face Camera` | Rotate enclosure to face camera on placement (default on) |
 
-**Workflow:** Tap the AR plane → enclosure prefab placed immediately. Enclosures are placed in order (1 → 2 → 3). Ghost preview follows the screen centre while active.
+**Workflow:**
+1. User taps a type-select button in the UI (Enclosure 1 / 2 / 3)
+2. `SelectType(EnclosureType)` activates the ghost preview for that type
+3. User taps the AR plane → enclosure placed, mode resets to None
+4. Each type can only be placed once; its button disables automatically after placement
+
+Key API:
+- `SelectType(EnclosureType type)` — activates placement for the chosen type
+- `CancelPlacement()` — cancels without placing
 
 ---
 
@@ -239,7 +247,13 @@ Connect all `[SerializeField]` references in the Inspector:
 
 **Phase panels:** `m_PanelDetecting`, `m_PanelPlacingEnclosures`, `m_PanelPathCreation`, `m_PanelPlacingObjects`, `m_PanelComplete`
 
+**Enclosure select buttons:** `Btn Select Enclosure 1/2/3` — each calls `EnclosurePlacer.SelectType()`; auto-disabled once that enclosure type is placed.
+
 **Key buttons:** Cancel Enclosure, Begin/Stop/Finalize Path, Open/Close Object Menu, Fence/Gate/Bin/Animal selectors, Delete, Undo, Redo, Check Requirements, Save
+
+**Debug / Testing toggles** (Inspector):
+- `Debug Skip Detection` — bypass plane detection, start in PlacingEnclosures phase
+- `Debug Enclosure Only` — suppress path/object panels for enclosure-only testing
 
 **System refs:** `EnclosurePlacer`, `PathCreator`, `ZooObjectPlacer`, `ZooSaveManager`, `ZooRequirementsChecker`, `ZooTransformer`
 
