@@ -38,6 +38,11 @@ namespace ZooBuilder
         [Tooltip("If true the enclosure faces the AR camera when placed.")]
         [SerializeField] bool m_FaceCamera = true;
 
+        [Header("Debug / Testing")]
+        [Tooltip("If AR raycast fails, place enclosure at a fixed distance in front of the camera. Useful for editor/simulator testing.")]
+        [SerializeField] bool m_DebugFallbackPlacement = false;
+        [SerializeField] float m_DebugPlaceDistance = 1.5f;
+
         static readonly List<ARRaycastHit> s_Hits = new List<ARRaycastHit>();
 
         bool m_IsActive = false;
@@ -103,11 +108,30 @@ namespace ZooBuilder
         {
             if (!m_IsActive) return null;
 
-            if (!m_RaycastManager.Raycast(screenPos, s_Hits, TrackableType.PlaneWithinPolygon))
-                return null;
+            Vector3 spawnPos;
+            Quaternion spawnRot;
 
-            var hit = s_Hits[0];
-            if (!IsHorizontal(hit.trackable as ARPlane)) return null;
+            bool arHit = m_RaycastManager != null &&
+                         m_RaycastManager.Raycast(screenPos, s_Hits, TrackableType.PlaneWithinPolygon) &&
+                         IsHorizontal(s_Hits[0].trackable as ARPlane);
+
+            if (arHit)
+            {
+                spawnPos = s_Hits[0].pose.position;
+                spawnRot = m_FaceCamera ? FacingCamera(spawnPos) : s_Hits[0].pose.rotation;
+            }
+            else if (m_DebugFallbackPlacement && m_ARCamera != null)
+            {
+                // Place at a fixed distance in front of the camera on Y=0
+                spawnPos = m_ARCamera.transform.position +
+                           m_ARCamera.transform.forward * m_DebugPlaceDistance;
+                spawnPos.y = 0f;
+                spawnRot = m_FaceCamera ? FacingCamera(spawnPos) : Quaternion.identity;
+            }
+            else
+            {
+                return null;
+            }
 
             EnclosureType type = ZooManager.Instance.GetNextEnclosureType();
             if (type == EnclosureType.None) return null;
@@ -118,10 +142,6 @@ namespace ZooBuilder
                 Debug.LogError($"[EnclosurePlacer] Prefab for {type} is not assigned.");
                 return null;
             }
-
-            // Check overlap against already-placed enclosures using the prefab bounds
-            Vector3 spawnPos = hit.pose.position;
-            Quaternion spawnRot = m_FaceCamera ? FacingCamera(spawnPos) : hit.pose.rotation;
 
             if (WouldOverlap(prefab, spawnPos, spawnRot))
             {
