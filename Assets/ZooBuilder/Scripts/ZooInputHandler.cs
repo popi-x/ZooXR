@@ -27,13 +27,13 @@ namespace ZooBuilder
 
         void Update()
         {
-            // Skip if the user is touching UI elements
-            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(-1))
-                return;
-
             if (Input.touchCount == 0) return;
 
             var touch = Input.GetTouch(0);
+
+            // Skip if the user is touching a UI element
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(touch.fingerId))
+                return;
 
             switch (touch.phase)
             {
