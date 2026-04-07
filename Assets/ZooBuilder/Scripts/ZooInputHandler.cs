@@ -158,6 +158,7 @@ namespace ZooBuilder
         void OnTap(Vector2 screenPos)
         {
             if (ZooManager.Instance == null) return;
+            Debug.Log($"[ZooInputHandler] Tap at {screenPos}, mode={ZooManager.Instance.CurrentPlacementMode}");
 
             switch (ZooManager.Instance.CurrentPlacementMode)
             {

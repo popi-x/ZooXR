@@ -106,7 +106,11 @@ namespace ZooBuilder
         /// </summary>
         public EnclosureFloor TryPlace(Vector2 screenPos)
         {
-            if (!m_IsActive) return null;
+            if (!m_IsActive)
+            {
+                Debug.LogWarning("[EnclosurePlacer] TryPlace called but m_IsActive is false. Was BeginPlacement() called?");
+                return null;
+            }
 
             Vector3 spawnPos;
             Quaternion spawnRot;
@@ -119,17 +123,21 @@ namespace ZooBuilder
             {
                 spawnPos = s_Hits[0].pose.position;
                 spawnRot = m_FaceCamera ? FacingCamera(spawnPos) : s_Hits[0].pose.rotation;
+                Debug.Log($"[EnclosurePlacer] AR raycast hit at {spawnPos}");
             }
             else if (m_DebugFallbackPlacement && m_ARCamera != null)
             {
-                // Place at a fixed distance in front of the camera on Y=0
                 spawnPos = m_ARCamera.transform.position +
                            m_ARCamera.transform.forward * m_DebugPlaceDistance;
                 spawnPos.y = 0f;
                 spawnRot = m_FaceCamera ? FacingCamera(spawnPos) : Quaternion.identity;
+                Debug.Log($"[EnclosurePlacer] Using debug fallback at {spawnPos}");
             }
             else
             {
+                Debug.LogWarning($"[EnclosurePlacer] No AR hit at {screenPos}. " +
+                    $"RaycastManager={(m_RaycastManager != null ? "OK" : "NULL")}. " +
+                    "Enable Debug Fallback Placement if testing without a real plane.");
                 return null;
             }
 
