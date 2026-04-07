@@ -28,12 +28,6 @@ namespace ZooBuilder
         [Tooltip("Prefab for Enclosure 3 (hungry animal).")]
         [SerializeField] GameObject m_EnclosureFloorPrefab3;
 
-        [Header("Ghost Preview")]
-        [Tooltip("Transparent preview shown at the tap position before confirming placement.")]
-        [SerializeField] GameObject m_GhostPrefab1;
-        [SerializeField] GameObject m_GhostPrefab2;
-        [SerializeField] GameObject m_GhostPrefab3;
-
         [Header("Placement Settings")]
         [Tooltip("If true the enclosure faces the AR camera when placed.")]
         [SerializeField] bool m_FaceCamera = true;
@@ -46,7 +40,6 @@ namespace ZooBuilder
         static readonly List<ARRaycastHit> s_Hits = new List<ARRaycastHit>();
 
         bool m_IsActive = false;
-        GameObject m_ActiveGhost = null;
 
         // ── Activation ────────────────────────────────────────────────────────
 
@@ -62,39 +55,12 @@ namespace ZooBuilder
             }
             m_IsActive = true;
             ZooManager.Instance.SetPlacementModeExplicit(PlacementMode.EnclosureFloor);
-            ShowGhost(next);
         }
 
         /// <summary>Cancels placement mode and hides the ghost.</summary>
         public void CancelPlacement()
         {
             m_IsActive = false;
-            HideGhost();
-        }
-
-        // ── Per-frame ghost tracking ──────────────────────────────────────────
-
-        void Update()
-        {
-            if (!m_IsActive || m_ActiveGhost == null) return;
-
-            // Move ghost to wherever the centre of the screen (or last touch) hits the AR plane
-            Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
-            if (m_RaycastManager.Raycast(screenCenter, s_Hits, TrackableType.PlaneWithinPolygon))
-            {
-                var hit = s_Hits[0];
-                if (IsHorizontal(hit.trackable as ARPlane))
-                {
-                    m_ActiveGhost.SetActive(true);
-                    m_ActiveGhost.transform.position = hit.pose.position;
-                    if (m_FaceCamera && m_ARCamera != null)
-                        m_ActiveGhost.transform.rotation = FacingCamera(hit.pose.position);
-                }
-            }
-            else
-            {
-                m_ActiveGhost.SetActive(false);
-            }
         }
 
         // ── Tap to place ──────────────────────────────────────────────────────
@@ -173,9 +139,6 @@ namespace ZooBuilder
 
             ZooManager.Instance.RegisterEnclosure(floor);
 
-            // Hide ghost and switch to None mode so user can gesture-edit the placed enclosure.
-            // The UI "Next" button will call BeginPlacement() for the next type.
-            HideGhost();
             m_IsActive = false;
             ZooManager.Instance.SetPlacementModeExplicit(PlacementMode.None);
 
@@ -191,56 +154,6 @@ namespace ZooBuilder
             EnclosureType.Enclosure3 => m_EnclosureFloorPrefab3,
             _ => null
         };
-
-        GameObject GetGhostForType(EnclosureType type) => type switch
-        {
-            EnclosureType.Enclosure1 => m_GhostPrefab1,
-            EnclosureType.Enclosure2 => m_GhostPrefab2,
-            EnclosureType.Enclosure3 => m_GhostPrefab3,
-            _ => null
-        };
-
-        void ShowGhost(EnclosureType type)
-        {
-            HideGhost();
-
-            // Use dedicated ghost prefab if assigned, otherwise fall back to the real prefab
-            var ghostPrefab = GetGhostForType(type) ?? GetPrefabForType(type);
-            if (ghostPrefab == null) return;
-
-            m_ActiveGhost = Object.Instantiate(ghostPrefab);
-            m_ActiveGhost.SetActive(false);
-
-            // Make all renderers semi-transparent so it looks like a ghost preview
-            foreach (var r in m_ActiveGhost.GetComponentsInChildren<Renderer>())
-            {
-                foreach (var mat in r.materials)
-                {
-                    // Works for URP Lit and Standard shaders
-                    mat.SetFloat("_Surface", 1);          // 1 = Transparent
-                    mat.SetFloat("_Blend", 0);            // Alpha blend
-                    mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-                    mat.renderQueue = 3000;
-
-                    Color c = mat.color;
-                    c.a = 0.4f;
-                    mat.color = c;
-                }
-            }
-
-            // Disable all colliders so the ghost doesn't interfere with raycasts
-            foreach (var col in m_ActiveGhost.GetComponentsInChildren<Collider>())
-                col.enabled = false;
-        }
-
-        void HideGhost()
-        {
-            if (m_ActiveGhost != null)
-            {
-                Object.Destroy(m_ActiveGhost);
-                m_ActiveGhost = null;
-            }
-        }
 
         bool IsHorizontal(ARPlane plane)
         {
