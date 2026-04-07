@@ -1,20 +1,16 @@
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 
 namespace ZooBuilder
 {
     /// <summary>
-    /// Handles the placement of enclosure floors on a detected AR horizontal plane.
+    /// Places enclosure floor prefabs directly on the AR horizontal plane with a single tap.
+    /// Each enclosure type (1/2/3) uses its own prefab and is placed in order.
     ///
-    /// Workflow:
-    ///   1. User taps to add corner points of the enclosure polygon.
-    ///   2. After placing at least 3 points the "Confirm" button becomes available.
-    ///   3. On confirm, the polygon is validated (no overlap, minimum size) and
-    ///      an EnclosureFloor is instantiated and registered with ZooManager.
-    ///
-    /// To make an enclosure non-rectangular, the user can add 5+ corner points.
+    /// After placement the enclosure can be moved, rotated, and scaled
+    /// (as long as no objects have been placed on it and path creation hasn't started).
     /// </summary>
     public class EnclosurePlacer : MonoBehaviour
     {
@@ -22,242 +18,259 @@ namespace ZooBuilder
         [SerializeField] ARRaycastManager m_RaycastManager;
         [SerializeField] Camera m_ARCamera;
 
-        [Header("Prefabs")]
-        [Tooltip("Floor prefab for Enclosure 1 (static animals). Needs EnclosureFloor, MeshFilter, MeshRenderer, MeshCollider.")]
+        [Header("Enclosure Prefabs")]
+        [Tooltip("Prefab for Enclosure 1 (static animals). Must have EnclosureFloor, MeshFilter, MeshRenderer, MeshCollider.")]
         [SerializeField] GameObject m_EnclosureFloorPrefab1;
 
-        [Tooltip("Floor prefab for Enclosure 2 (roaming animals).")]
+        [Tooltip("Prefab for Enclosure 2 (roaming animals).")]
         [SerializeField] GameObject m_EnclosureFloorPrefab2;
 
-        [Tooltip("Floor prefab for Enclosure 3 (hungry animal).")]
+        [Tooltip("Prefab for Enclosure 3 (hungry animal).")]
         [SerializeField] GameObject m_EnclosureFloorPrefab3;
 
-        [Tooltip("Small sphere shown at each corner tap point.")]
-        [SerializeField] GameObject m_CornerMarkerPrefab;
+        [Header("Ghost Preview")]
+        [Tooltip("Transparent preview shown at the tap position before confirming placement.")]
+        [SerializeField] GameObject m_GhostPrefab1;
+        [SerializeField] GameObject m_GhostPrefab2;
+        [SerializeField] GameObject m_GhostPrefab3;
 
-        [Tooltip("Preview line showing the polygon being drawn.")]
-        [SerializeField] LineRenderer m_PreviewLine;
-
-        [Header("Validation")]
-        [SerializeField] float m_MinPolygonArea = 0.5f;  // square meters
-
-        // Corner points gathered so far (world space, on AR plane)
-        readonly List<Vector3> m_CornerPoints = new List<Vector3>();
-        readonly List<GameObject> m_CornerMarkers = new List<GameObject>();
+        [Header("Placement Settings")]
+        [Tooltip("If true the enclosure faces the AR camera when placed.")]
+        [SerializeField] bool m_FaceCamera = true;
 
         static readonly List<ARRaycastHit> s_Hits = new List<ARRaycastHit>();
 
         bool m_IsActive = false;
-        int m_MinCorners = 3;
+        GameObject m_ActiveGhost = null;
 
-        // ── Activation ───────────────────────────────────────────────────────
+        // ── Activation ────────────────────────────────────────────────────────
 
+        /// <summary>Starts placement mode for the next enclosure type.</summary>
         public void BeginPlacement()
         {
             if (ZooManager.Instance == null) return;
-            if (ZooManager.Instance.GetNextEnclosureType() == EnclosureType.None)
+            EnclosureType next = ZooManager.Instance.GetNextEnclosureType();
+            if (next == EnclosureType.None)
             {
-                Debug.LogWarning("[EnclosurePlacer] All 3 enclosure types are already placed.");
+                Debug.LogWarning("[EnclosurePlacer] All 3 enclosures already placed.");
                 return;
             }
-            ClearCorners();
             m_IsActive = true;
-            if (m_PreviewLine != null) m_PreviewLine.positionCount = 0;
+            ShowGhost(next);
         }
 
+        /// <summary>Cancels placement mode and hides the ghost.</summary>
         public void CancelPlacement()
         {
-            ClearCorners();
             m_IsActive = false;
-            if (m_PreviewLine != null) m_PreviewLine.positionCount = 0;
+            HideGhost();
         }
 
-        // ── Per-frame ────────────────────────────────────────────────────────
+        // ── Per-frame ghost tracking ──────────────────────────────────────────
 
         void Update()
         {
-            if (!m_IsActive) return;
-            UpdatePreviewLine();
-        }
+            if (!m_IsActive || m_ActiveGhost == null) return;
 
-        // ── Tap handling (called by ZooUIManager or input handler) ───────────
-
-        /// <summary>
-        /// Called when the user taps the screen to add a corner point.
-        /// Returns true if a point was successfully added.
-        /// </summary>
-        public bool TryAddCorner(Vector2 screenPos)
-        {
-            if (!m_IsActive) return false;
-
-            if (m_RaycastManager.Raycast(screenPos, s_Hits, TrackableType.PlaneWithinPolygon))
+            // Move ghost to wherever the centre of the screen (or last touch) hits the AR plane
+            Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            if (m_RaycastManager.Raycast(screenCenter, s_Hits, TrackableType.PlaneWithinPolygon))
             {
                 var hit = s_Hits[0];
-                // Only accept horizontal planes
-                var plane = hit.trackable as ARPlane;
-                if (plane != null && plane.alignment != PlaneAlignment.HorizontalUp &&
-                    plane.alignment != PlaneAlignment.HorizontalDown)
+                if (IsHorizontal(hit.trackable as ARPlane))
                 {
-                    Debug.Log("[EnclosurePlacer] Ignoring non-horizontal plane tap.");
-                    return false;
+                    m_ActiveGhost.SetActive(true);
+                    m_ActiveGhost.transform.position = hit.pose.position;
+                    if (m_FaceCamera && m_ARCamera != null)
+                        m_ActiveGhost.transform.rotation = FacingCamera(hit.pose.position);
                 }
+            }
+            else
+            {
+                m_ActiveGhost.SetActive(false);
+            }
+        }
 
-                Vector3 worldPoint = hit.pose.position;
-                m_CornerPoints.Add(worldPoint);
-                SpawnCornerMarker(worldPoint);
-                UpdatePreviewLine();
-                return true;
+        // ── Tap to place ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Called by ZooInputHandler when the user taps while in EnclosureFloor placement mode.
+        /// Instantiates the correct prefab at the hit position.
+        /// Returns the created EnclosureFloor, or null on failure.
+        /// </summary>
+        public EnclosureFloor TryPlace(Vector2 screenPos)
+        {
+            if (!m_IsActive) return null;
+
+            if (!m_RaycastManager.Raycast(screenPos, s_Hits, TrackableType.PlaneWithinPolygon))
+                return null;
+
+            var hit = s_Hits[0];
+            if (!IsHorizontal(hit.trackable as ARPlane)) return null;
+
+            EnclosureType type = ZooManager.Instance.GetNextEnclosureType();
+            if (type == EnclosureType.None) return null;
+
+            GameObject prefab = GetPrefabForType(type);
+            if (prefab == null)
+            {
+                Debug.LogError($"[EnclosurePlacer] Prefab for {type} is not assigned.");
+                return null;
+            }
+
+            // Check overlap against already-placed enclosures using the prefab bounds
+            Vector3 spawnPos = hit.pose.position;
+            Quaternion spawnRot = m_FaceCamera ? FacingCamera(spawnPos) : hit.pose.rotation;
+
+            if (WouldOverlap(prefab, spawnPos, spawnRot))
+            {
+                Debug.LogWarning("[EnclosurePlacer] Placement would overlap an existing enclosure.");
+                return null;
+            }
+
+            // Instantiate
+            var floorGO = Object.Instantiate(prefab, spawnPos, spawnRot);
+            floorGO.name = $"Enclosure_{(int)type}";
+
+            if (ZooManager.Instance.zooRoot != null)
+                floorGO.transform.SetParent(ZooManager.Instance.zooRoot, true);
+
+            // Initialize EnclosureFloor with the prefab's mesh vertices as the polygon
+            var floor = floorGO.GetComponent<EnclosureFloor>();
+            if (floor == null) floor = floorGO.AddComponent<EnclosureFloor>();
+
+            Vector3[] worldVerts = GetMeshWorldVertices(floorGO);
+            floor.Initialize(worldVerts, type);
+
+            ZooManager.Instance.RegisterEnclosure(floor);
+
+            // If all 3 are placed, stop; otherwise keep active for the next one
+            if (ZooManager.Instance.GetNextEnclosureType() == EnclosureType.None)
+                CancelPlacement();
+            else
+                ShowGhost(ZooManager.Instance.GetNextEnclosureType());
+
+            return floor;
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────────
+
+        GameObject GetPrefabForType(EnclosureType type) => type switch
+        {
+            EnclosureType.Enclosure1 => m_EnclosureFloorPrefab1,
+            EnclosureType.Enclosure2 => m_EnclosureFloorPrefab2,
+            EnclosureType.Enclosure3 => m_EnclosureFloorPrefab3,
+            _ => null
+        };
+
+        GameObject GetGhostForType(EnclosureType type) => type switch
+        {
+            EnclosureType.Enclosure1 => m_GhostPrefab1,
+            EnclosureType.Enclosure2 => m_GhostPrefab2,
+            EnclosureType.Enclosure3 => m_GhostPrefab3,
+            _ => null
+        };
+
+        void ShowGhost(EnclosureType type)
+        {
+            HideGhost();
+            var ghostPrefab = GetGhostForType(type);
+            if (ghostPrefab != null)
+            {
+                m_ActiveGhost = Object.Instantiate(ghostPrefab);
+                m_ActiveGhost.SetActive(false);
+            }
+        }
+
+        void HideGhost()
+        {
+            if (m_ActiveGhost != null)
+            {
+                Object.Destroy(m_ActiveGhost);
+                m_ActiveGhost = null;
+            }
+        }
+
+        bool IsHorizontal(ARPlane plane)
+        {
+            if (plane == null) return true; // allow if can't determine
+            return plane.alignment == PlaneAlignment.HorizontalUp ||
+                   plane.alignment == PlaneAlignment.HorizontalDown;
+        }
+
+        Quaternion FacingCamera(Vector3 pos)
+        {
+            Vector3 dir = m_ARCamera.transform.position - pos;
+            dir.y = 0f;
+            return dir.sqrMagnitude > 0.001f
+                ? Quaternion.LookRotation(dir.normalized)
+                : Quaternion.identity;
+        }
+
+        /// <summary>
+        /// Rough overlap check using the prefab's renderer bounds at the proposed position.
+        /// </summary>
+        bool WouldOverlap(GameObject prefab, Vector3 pos, Quaternion rot)
+        {
+            var renderers = prefab.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0) return false;
+
+            // Estimate bounds from the prefab's renderers
+            var b = renderers[0].bounds;
+            foreach (var r in renderers) b.Encapsulate(r.bounds);
+
+            // Offset bounds to proposed position
+            b.center = pos + (b.center - prefab.transform.position);
+
+            foreach (var enc in ZooManager.Instance.Enclosures)
+            {
+                if (enc.GetWorldBounds().Intersects(b))
+                    return true;
             }
             return false;
         }
 
         /// <summary>
-        /// Removes the last added corner point (undo-style while drawing).
+        /// Returns the world-space vertices of the first MeshFilter found on the GameObject.
+        /// Falls back to a default quad if no mesh is found.
         /// </summary>
-        public void RemoveLastCorner()
+        Vector3[] GetMeshWorldVertices(GameObject go)
         {
-            if (m_CornerPoints.Count == 0) return;
-            m_CornerPoints.RemoveAt(m_CornerPoints.Count - 1);
-
-            var last = m_CornerMarkers[m_CornerMarkers.Count - 1];
-            m_CornerMarkers.RemoveAt(m_CornerMarkers.Count - 1);
-            Destroy(last);
-
-            UpdatePreviewLine();
-        }
-
-        /// <summary>
-        /// Returns true if we have enough corners to confirm placement.
-        /// </summary>
-        public bool CanConfirm() => m_CornerPoints.Count >= m_MinCorners && m_IsActive;
-
-        /// <summary>
-        /// Confirms the enclosure polygon and creates the floor.
-        /// Returns the created EnclosureFloor, or null on failure.
-        /// </summary>
-        public EnclosureFloor ConfirmPlacement()
-        {
-            if (!CanConfirm()) return null;
-
-            var points = m_CornerPoints.ToArray();
-
-            // Validate polygon area
-            float area = PolygonArea(points);
-            if (area < m_MinPolygonArea)
+            var mf = go.GetComponentInChildren<MeshFilter>();
+            if (mf != null && mf.sharedMesh != null)
             {
-                Debug.LogWarning($"[EnclosurePlacer] Enclosure too small (area={area:F2}m²). Minimum is {m_MinPolygonArea}m².");
-                return null;
+                var localVerts = mf.sharedMesh.vertices;
+                var world = new Vector3[localVerts.Length];
+                for (int i = 0; i < localVerts.Length; i++)
+                    world[i] = mf.transform.TransformPoint(localVerts[i]);
+                return world;
             }
 
-            // Check overlap with existing enclosures
-            if (ZooManager.Instance.PolygonOverlapsAnyEnclosure(points))
+            // Fallback: 1x1 metre quad centred on the object
+            float h = 0.5f;
+            return new[]
             {
-                Debug.LogWarning("[EnclosurePlacer] Enclosure overlaps an existing enclosure.");
-                return null;
-            }
-
-            // Determine which enclosure type to assign
-            EnclosureType type = ZooManager.Instance.GetNextEnclosureType();
-            if (type == EnclosureType.None)
-            {
-                Debug.LogWarning("[EnclosurePlacer] All enclosure types are already placed.");
-                return null;
-            }
-
-            // Pick the prefab matching the enclosure type
-            GameObject floorPrefab = type switch
-            {
-                EnclosureType.Enclosure1 => m_EnclosureFloorPrefab1,
-                EnclosureType.Enclosure2 => m_EnclosureFloorPrefab2,
-                EnclosureType.Enclosure3 => m_EnclosureFloorPrefab3,
-                _ => m_EnclosureFloorPrefab1
+                go.transform.position + go.transform.TransformDirection(new Vector3(-h, 0,  h)),
+                go.transform.position + go.transform.TransformDirection(new Vector3( h, 0,  h)),
+                go.transform.position + go.transform.TransformDirection(new Vector3( h, 0, -h)),
+                go.transform.position + go.transform.TransformDirection(new Vector3(-h, 0, -h)),
             };
-
-            if (floorPrefab == null)
-            {
-                Debug.LogError($"[EnclosurePlacer] Floor prefab for {type} is not assigned in the Inspector.");
-                return null;
-            }
-
-            // Spawn the floor
-            Vector3 center = PolygonCentroid(points);
-            var floorGO = Instantiate(floorPrefab, center, Quaternion.identity);
-            floorGO.name = $"Enclosure_{(int)type}";
-
-            // Parent to zoo root so zoo transformation works
-            if (ZooManager.Instance.zooRoot != null)
-                floorGO.transform.SetParent(ZooManager.Instance.zooRoot, true);
-
-            var floor = floorGO.GetComponent<EnclosureFloor>();
-            if (floor == null) floor = floorGO.AddComponent<EnclosureFloor>();
-            floor.Initialize(points, type);
-
-            ZooManager.Instance.RegisterEnclosure(floor);
-
-            // Clean up corner markers
-            CancelPlacement();
-
-            return floor;
         }
 
-        // ── Helpers ──────────────────────────────────────────────────────────
-
-        void SpawnCornerMarker(Vector3 pos)
-        {
-            if (m_CornerMarkerPrefab == null) return;
-            var marker = Instantiate(m_CornerMarkerPrefab, pos + Vector3.up * 0.02f, Quaternion.identity);
-            m_CornerMarkers.Add(marker);
-        }
-
-        void UpdatePreviewLine()
-        {
-            if (m_PreviewLine == null) return;
-            int n = m_CornerPoints.Count;
-            if (n < 2)
-            {
-                m_PreviewLine.positionCount = 0;
-                return;
-            }
-
-            // Close the polygon preview
-            m_PreviewLine.positionCount = n + 1;
-            for (int i = 0; i < n; i++)
-                m_PreviewLine.SetPosition(i, m_CornerPoints[i] + Vector3.up * 0.02f);
-            m_PreviewLine.SetPosition(n, m_CornerPoints[0] + Vector3.up * 0.02f);
-        }
-
-        void ClearCorners()
-        {
-            m_CornerPoints.Clear();
-            foreach (var m in m_CornerMarkers)
-                if (m != null) Destroy(m);
-            m_CornerMarkers.Clear();
-        }
-
-        // Shoelace formula for polygon area
-        float PolygonArea(Vector3[] pts)
-        {
-            float area = 0f;
-            int n = pts.Length;
-            for (int i = 0; i < n; i++)
-            {
-                int j = (i + 1) % n;
-                area += pts[i].x * pts[j].z;
-                area -= pts[j].x * pts[i].z;
-            }
-            return Mathf.Abs(area) * 0.5f;
-        }
-
-        Vector3 PolygonCentroid(Vector3[] pts)
-        {
-            Vector3 c = Vector3.zero;
-            foreach (var p in pts) c += p;
-            return c / pts.Length;
-        }
-
-        // ── Public state ────────────────────────────────────────────────────
+        // ── Public state ──────────────────────────────────────────────────────
 
         public bool IsActive => m_IsActive;
-        public int CornerCount => m_CornerPoints.Count;
+
+        /// <summary>Legacy – no longer used but kept so ZooUIManager compiles.</summary>
+        public int CornerCount => 0;
+
+        /// <summary>Legacy – no longer used.</summary>
+        public bool CanConfirm() => false;
+
+        /// <summary>Legacy – no longer used.</summary>
+        public EnclosureFloor ConfirmPlacement() => null;
+
+        /// <summary>Legacy – no longer used.</summary>
+        public void RemoveLastCorner() { }
     }
 }
