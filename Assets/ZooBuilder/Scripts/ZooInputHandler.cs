@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.EnhancedTouch;
@@ -47,9 +48,8 @@ namespace ZooBuilder
 
             var touch = touches[0];
 
-            // Skip UI touches
-            if (EventSystem.current != null &&
-                EventSystem.current.IsPointerOverGameObject(touch.touchId))
+            // Skip UI touches – use RaycastAll so it works with both old and new Input System
+            if (IsOverUI(touch.screenPosition))
                 return;
 
             if (touch.phase == TouchPhase.Began)
@@ -109,6 +109,17 @@ namespace ZooBuilder
                 Vector2 mid = (t0.screenPosition + t1.screenPosition) * 0.5f;
                 m_ZooTransformer?.HandleTwoFingerGesture(pinchDelta, twistDelta, mid);
             }
+        }
+
+        // Works with both StandaloneInputModule and InputSystemUIInputModule
+        static readonly List<RaycastResult> s_UIRaycastResults = new List<RaycastResult>();
+        bool IsOverUI(Vector2 screenPos)
+        {
+            if (EventSystem.current == null) return false;
+            var pe = new PointerEventData(EventSystem.current) { position = screenPos };
+            s_UIRaycastResults.Clear();
+            EventSystem.current.RaycastAll(pe, s_UIRaycastResults);
+            return s_UIRaycastResults.Count > 0;
         }
 
         bool HitsEnclosure(Vector2 screenPos)

@@ -33,6 +33,8 @@ namespace ZooBuilder
         [SerializeField] bool m_FaceCamera = true;
 
         [Header("Debug / Testing")]
+        [Tooltip("Automatically call BeginPlacement() on Start so you don't need a button for quick testing.")]
+        [SerializeField] bool m_AutoBeginOnStart = false;
         [Tooltip("If AR raycast fails, place enclosure at a fixed distance in front of the camera. Useful for editor/simulator testing.")]
         [SerializeField] bool m_DebugFallbackPlacement = false;
         [SerializeField] float m_DebugPlaceDistance = 1.5f;
@@ -40,6 +42,12 @@ namespace ZooBuilder
         static readonly List<ARRaycastHit> s_Hits = new List<ARRaycastHit>();
 
         bool m_IsActive = false;
+
+        void Start()
+        {
+            if (m_AutoBeginOnStart)
+                BeginPlacement();
+        }
 
         // ── Activation ────────────────────────────────────────────────────────
 
@@ -81,8 +89,9 @@ namespace ZooBuilder
             Vector3 spawnPos;
             Quaternion spawnRot;
 
+            // PlaneWithinBounds is more forgiving than PlaneWithinPolygon (accepts bounding rect of plane)
             bool arHit = m_RaycastManager != null &&
-                         m_RaycastManager.Raycast(screenPos, s_Hits, TrackableType.PlaneWithinPolygon) &&
+                         m_RaycastManager.Raycast(screenPos, s_Hits, TrackableType.PlaneWithinBounds) &&
                          IsHorizontal(s_Hits[0].trackable as ARPlane);
 
             if (arHit)
