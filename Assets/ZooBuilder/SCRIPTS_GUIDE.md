@@ -1,7 +1,7 @@
 # ZooBuilder Scripts Guide
 
 > Auto-reminder: this file should be updated after every commit that modifies `Assets/ZooBuilder/Scripts/`.
-> Last updated: 2026-04-07
+> Last updated: 2026-04-08
 
 ---
 
@@ -81,17 +81,18 @@ Key rules enforced automatically:
 **Debug / Testing:**
 | Inspector Field | Description |
 |----------------|-------------|
+| `Auto Begin On Start` | Automatically call `BeginPlacement()` on Start — skip the Begin button for quick testing |
 | `Debug Fallback Placement` | If AR raycast finds no plane, place in front of camera instead |
 | `Debug Place Distance` | Distance in front of camera for fallback (default 1.5 m) |
 
 **Placement flow (no ghost — tap to place directly):**
-1. `BeginPlacement()` → PlacementMode set to EnclosureFloor
+1. `BeginPlacement()` → PlacementMode set to EnclosureFloor (or check `Auto Begin On Start`)
 2. Player taps AR plane → enclosure placed at hit position, auto-selected for gesture editing
 3. Player gestures to resize/reposition (via `ZooInputHandler`)
 4. Player taps **Next** → `BeginPlacement()` called for next type; **Next** becomes **Draw Path** after all 3
 5. Once path phase starts, all enclosures are locked
 
-On real device: requires a detected AR horizontal plane.  
+On real device: requires a detected AR horizontal plane (`TrackableType.PlaneWithinBounds`).  
 In editor/simulator: enable `Debug Fallback Placement` to place without a real plane.
 
 > **Mesh collision note:** Floor polygon uses the 4 bounding-box corners of the renderer at floor Y, not all mesh vertices. This avoids degenerate triangles from complex prefabs (e.g. cubes with 24 vertices).
@@ -277,6 +278,8 @@ Panels switch automatically as `ZooManager.CurrentPhase` changes.
 Routes all touch input using **EnhancedTouch** (new Input System). Single-finger and two-finger gestures are handled here; `ZooTransformer` no longer has its own Update.
 
 Requires `EnhancedTouchSupport.Enable()` — handled automatically in `OnEnable/OnDisable`.
+
+> **UI hit detection:** Uses `EventSystem.RaycastAll` (not `IsPointerOverGameObject(touchId)`) to correctly detect UI touches with both `StandaloneInputModule` and `InputSystemUIInputModule`. This fixes a bug where all touches were blocked when using the new Input System.
 
 **Tap routing (PlacementMode):**
 
